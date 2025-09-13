@@ -1,14 +1,11 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { fieldOrderForPreview, disciplineOptions } from '../constants';
-// FIX: Import NewPeiRecordData for consistency.
-import { PeiData, PeiFormField, PeiRecord, NewPeiRecordData } from '../types';
 import { TextAreaWithActions } from './TextAreaWithActions';
 import { callGenerativeAI } from '../services/geminiService';
 import { savePei, getPeiById, getAllRagFiles, addActivitiesToBank } from '../services/storageService';
 import { Modal } from './Modal';
 
-const helpTexts: Record<string, string> = {
+const helpTexts = {
     'id-diagnostico': 'Descreva o diagnóstico do aluno (se houver) e as necessidades educacionais específicas decorrentes dele. Ex: TDAH, Dislexia, TEA.',
     'id-contexto': 'Apresente um breve resumo do contexto familiar e da trajetória escolar do aluno. Fatores relevantes podem incluir apoio familiar, mudanças de escola, etc.',
     'aval-habilidades': 'Detalhe as competências e dificuldades do aluno em áreas acadêmicas como leitura, escrita e matemática. Use exemplos concretos.',
@@ -35,31 +32,26 @@ const requiredFields = [
     ...fieldOrderForPreview.find(s => s.title.startsWith("2."))!.fields.map(f => f.id)
 ];
 
-interface PeiFormViewProps {
-    editingPeiId: string | null;
-    onSaveSuccess: () => void;
-}
-
-export const PeiFormView: React.FC<PeiFormViewProps> = ({ editingPeiId, onSaveSuccess }) => {
-    const [currentPeiId, setCurrentPeiId] = useState<string | null>(editingPeiId);
-    const [peiData, setPeiData] = useState<PeiData>({});
-    const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+export const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
+    const [currentPeiId, setCurrentPeiId] = useState(editingPeiId);
+    const [peiData, setPeiData] = useState({});
+    const [loadingStates, setLoadingStates] = useState({});
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalContent, setModalContent] = useState<{ title: string; content: React.ReactNode, footer: React.ReactNode }>({ title: '', content: null, footer: null });
+    const [modalContent, setModalContent] = useState({ title: '', content: null, footer: null });
     
     const [isGeneratingFullPei, setIsGeneratingFullPei] = useState(false);
     const [isFullPeiModalOpen, setIsFullPeiModalOpen] = useState(false);
     const [fullPeiContent, setFullPeiContent] = useState('');
 
-    const [aiGeneratedFields, setAiGeneratedFields] = useState<Set<string>>(new Set());
+    const [aiGeneratedFields, setAiGeneratedFields] = useState(new Set());
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editModalData, setEditModalData] = useState<{ fieldId: string; label: string; text: string } | null>(null);
+    const [editModalData, setEditModalData] = useState(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [refinementInstruction, setRefinementInstruction] = useState('');
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-    const [smartAnalysisResults, setSmartAnalysisResults] = useState<Record<string, any | null>>({});
-    const [openSmartAnalysis, setOpenSmartAnalysis] = useState<Record<string, boolean>>({});
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [smartAnalysisResults, setSmartAnalysisResults] = useState({});
+    const [openSmartAnalysis, setOpenSmartAnalysis] = useState({});
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (editingPeiId) {
@@ -81,8 +73,8 @@ export const PeiFormView: React.FC<PeiFormViewProps> = ({ editingPeiId, onSaveSu
         return requiredFields.every(fieldId => peiData[fieldId]?.trim());
     }, [peiData]);
 
-    const validateForm = (): boolean => {
-        const newErrors: Record<string, string> = {};
+    const validateForm = () => {
+        const newErrors = {};
         let isValid = true;
         for (const fieldId of requiredFields) {
             if (!peiData[fieldId]?.trim()) {
@@ -99,7 +91,7 @@ export const PeiFormView: React.FC<PeiFormViewProps> = ({ editingPeiId, onSaveSu
         return isValid;
     };
 
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = useCallback((e) => {
         const { id, value } = e.target;
         setPeiData(prev => ({ ...prev, [id]: value }));
         if (errors[id]) {
@@ -111,7 +103,7 @@ export const PeiFormView: React.FC<PeiFormViewProps> = ({ editingPeiId, onSaveSu
         }
     }, [errors]);
 
-    const handleTextAreaChange = useCallback((id: string, value: string) => {
+    const handleTextAreaChange = useCallback((id, value) => {
         setPeiData(prev => ({ ...prev, [id]: value }));
         setAiGeneratedFields(prev => {
             const newSet = new Set(prev);
@@ -127,7 +119,7 @@ export const PeiFormView: React.FC<PeiFormViewProps> = ({ editingPeiId, onSaveSu
         }
     }, [errors]);
     
-    const buildAiContext = (fieldIdToExclude: string) => {
+    const buildAiContext = (fieldIdToExclude) => {
         // RAG Context from selected files
         const allRagFiles = getAllRagFiles();
         const selectedFiles = allRagFiles.filter(f => f.selected);
@@ -153,7 +145,7 @@ export const PeiFormView: React.FC<PeiFormViewProps> = ({ editingPeiId, onSaveSu
         return { ragContext, formContext };
     };
 
-    const handleActionClick = async (fieldId: string, action: 'ai' | 'smart' | 'suggest') => {
+    const handleActionClick = async (fieldId, action) => {
         if (action === 'ai' && !areRequiredFieldsFilled) {
             validateForm();
             return;
@@ -392,14 +384,13 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         setCurrentPeiId(null);
     }, []);
 
-    const handleSavePei = (e: React.FormEvent) => {
+    const handleSavePei = (e) => {
         e.preventDefault();
         if (!validateForm()) {
             return;
         }
 
-        // FIX: Use the imported NewPeiRecordData type for consistency.
-        const recordData: NewPeiRecordData = {
+        const recordData = {
             data: peiData,
             aiGeneratedFields: Array.from(aiGeneratedFields),
             smartAnalysisResults: smartAnalysisResults,
@@ -413,14 +404,15 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         onSaveSuccess();
     };
 
-    const renderSmartAnalysis = (analysis: any) => {
-        const criteriaMap: Record<string, string> = {
+    // FIX: Typed the 'analysis' parameter to resolve property access errors.
+    const renderSmartAnalysis = (analysis: Record<string, {critique: string; suggestion: string}>) => {
+        const criteriaMap = {
             isSpecific: "Específica (Specific)", isMeasurable: "Mensurável (Measurable)",
             isAchievable: "Atingível (Achievable)", isRelevant: "Relevante (Relevant)", isTimeBound: "Temporal (Time-Bound)",
         };
         return (
             <div className="space-y-4 text-sm">
-                {Object.entries(analysis).map(([key, value]: [string, any]) => (
+                {Object.entries(analysis).map(([key, value]) => (
                     <div key={key} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                         <h4 className="font-semibold text-gray-800">{criteriaMap[key]}</h4>
                         <p className="text-gray-600 mt-1"><span className="font-medium">Crítica:</span> {value.critique}</p>
@@ -431,7 +423,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         );
     };
     
-    const renderSuggestedActivities = (activities: any[]) => {
+    const renderSuggestedActivities = (activities) => {
         return (
             <div className="space-y-3">
                 {activities.map((activity, index) => (
@@ -448,7 +440,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         );
     };
 
-    const handleEditClick = (fieldId: string) => {
+    const handleEditClick = (fieldId) => {
         if (aiGeneratedFields.has(fieldId)) {
             const fieldLabel = fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label || '';
             setEditModalData({
@@ -458,6 +450,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
             });
             setIsEditModalOpen(true);
         } else {
+            // FIX: Cast element to HTMLTextAreaElement to access properties like 'value' and 'selectionStart'.
             const textarea = document.getElementById(fieldId) as HTMLTextAreaElement;
             if (textarea) {
                 textarea.focus();
@@ -466,7 +459,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         }
     };
     
-    const renderField = (field: PeiFormField) => {
+    const renderField = (field) => {
         const { id, label } = field;
         const hasError = !!errors[id];
         const textAreaFields = [

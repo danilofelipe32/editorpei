@@ -1,40 +1,26 @@
-import { Activity } from "../types";
+import { GoogleGenAI } from "@google/genai";
 
-const API_URL = "https://apifreellm.com/api/chat";
+// As per guidelines, initialize the GoogleGenAI client with an API key from environment variables.
+// This instance will be reused for all AI calls.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const callGenerativeAI = async (prompt: string): Promise<string> => {
+export const callGenerativeAI = async (prompt: string) => {
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ message: prompt }),
+        // Use the official SDK's `generateContent` method with the recommended model for text tasks.
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
         });
 
-        if (!response.ok) {
-            // This handles network errors, not API logic errors since API always returns 200.
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // As per guidelines, extract the text directly from the `response.text` property.
+        return response.text.trim();
 
-        const data = await response.json();
-
-        if (data.status === 'success') {
-            if (data.response) {
-                return data.response.trim();
-            } else {
-                throw new Error("A IA não retornou uma resposta válida.");
-            }
-        } else if (data.status === 'rate_limited') {
-            throw new Error(`Limite de requisições atingido. Por favor, aguarde ${data.retry_after || 5} segundos antes de tentar novamente.`);
-        } else {
-            throw new Error(`Erro da API: ${data.error || 'Ocorreu um erro desconhecido.'}`);
-        }
     } catch (error) {
-        console.error("ApiFreeLLM Error:", error);
+        console.error("Google GenAI Error:", error);
+        // Provide a user-friendly error message while logging the technical details.
         if (error instanceof Error) {
              throw new Error(`Falha na comunicação com a IA. ${error.message}`);
         }
-        throw new Error("Falha na comunicação com a IA. Verifique sua conexão.");
+        throw new Error("Falha na comunicação com a IA. Verifique sua conexão e a configuração da chave de API.");
     }
 };

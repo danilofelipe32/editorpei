@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
-import { ViewType } from '../types';
 
-interface PrivacyPolicyViewProps {
-    setView: (view: ViewType) => void;
-}
-
-export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ setView }) => {
+export const PrivacyPolicyView = ({ setView }) => {
   const [isChecked, setIsChecked] = useState(false);
 
   // Reusable component for section titles
-  const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  const SectionTitle = ({ children }) => (
     <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">{children}</h3>
   );
   
-  const SubTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  const SubTitle = ({ children }) => (
     <h4 className="text-lg font-semibold text-gray-700 mt-4 mb-2">{children}</h4>
   );
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ViewType } from './types';
 import { BrainIcon, EditorIcon, ActivityIcon, ArchiveIcon, PaperclipIcon, ShieldIcon } from './constants';
 
 // Since this is a large component, we define sub-views here.
@@ -11,12 +10,12 @@ import { SupportFilesView } from './components/SupportFilesView';
 import { PrivacyPolicyView } from './components/PrivacyPolicyView';
 
 
-const App: React.FC = () => {
+const App = () => {
     // Função para obter a visualização inicial da URL para suportar os atalhos do PWA
-    const getInitialView = (): ViewType => {
+    const getInitialView = () => {
         const params = new URLSearchParams(window.location.search);
-        const viewFromUrl = params.get('view') as ViewType;
-        const validViews: ViewType[] = ['pei-form-view', 'activity-bank-view', 'pei-list-view', 'files-view', 'privacy-policy-view'];
+        const viewFromUrl = params.get('view');
+        const validViews = ['pei-form-view', 'activity-bank-view', 'pei-list-view', 'files-view', 'privacy-policy-view'];
         if (viewFromUrl && validViews.includes(viewFromUrl)) {
             // Limpa a URL para evitar recarregamentos na mesma view
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -25,11 +24,11 @@ const App: React.FC = () => {
         return 'pei-form-view'; // Visualização padrão
     };
 
-    const [view, setView] = useState<ViewType>(getInitialView());
+    const [view, setView] = useState(getInitialView());
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [editingPeiId, setEditingPeiId] = useState<string | null>(null);
+    const [editingPeiId, setEditingPeiId] = useState(null);
 
-    const handleEditPei = (peiId: string) => {
+    const handleEditPei = (peiId) => {
         setEditingPeiId(peiId);
         setView('pei-form-view');
     };
@@ -39,7 +38,7 @@ const App: React.FC = () => {
         setView('pei-form-view');
     };
 
-    const handleNavigation = (targetView: ViewType) => {
+    const handleNavigation = (targetView) => {
         if (targetView === 'pei-form-view') {
             handleNewPei();
         } else {
@@ -89,14 +88,7 @@ const App: React.FC = () => {
 };
 
 
-interface SidebarProps {
-    currentView: ViewType;
-    onNavigate: (view: ViewType) => void;
-    isSidebarOpen: boolean;
-    setIsSidebarOpen: (isOpen: boolean) => void;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isSidebarOpen, setIsSidebarOpen }) => {
+const Sidebar = ({ currentView, onNavigate, isSidebarOpen, setIsSidebarOpen }) => {
     
     const navItems = [
         { id: 'pei-form-view', icon: <EditorIcon />, label: 'Editor PEI' },
@@ -129,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isSidebarOpe
                         <a
                             key={item.id}
                             href="#"
-                            onClick={(e) => { e.preventDefault(); onNavigate(item.id as ViewType); }}
+                            onClick={(e) => { e.preventDefault(); onNavigate(item.id); }}
                             className={`
                                 flex items-center gap-4 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
                                 ${currentView === item.id 
@@ -148,7 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isSidebarOpe
                 <a
                     key={privacyItem.id}
                     href="#"
-                    onClick={(e) => { e.preventDefault(); onNavigate(privacyItem.id as ViewType); }}
+                    onClick={(e) => { e.preventDefault(); onNavigate(privacyItem.id); }}
                     className={`
                         flex items-center gap-4 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
                         ${currentView === privacyItem.id 

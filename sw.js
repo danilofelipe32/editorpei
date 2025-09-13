@@ -1,15 +1,14 @@
 // sw.js
-const CACHE_NAME = 'assistente-pei-pwa-cache-v2';
+const CACHE_NAME = 'assistente-pei-pwa-cache-v3';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png',
-  '/index.tsx', // The browser will request the compiled version, which will be cached on first fetch
+  '/index.jsx',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
+  'https://unpkg.com/@babel/standalone/babel.min.js'
 ];
 
 // Instala o service worker e armazena os ativos essenciais no cache.

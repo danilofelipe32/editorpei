@@ -9,8 +9,8 @@
     <!-- PWA and Mobile Optimization -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#5d3eef" />
-    <link rel="apple-touch-icon" href="/logo192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBmaWxsPSIjNWQzZWVmIj48IS0tISBGb250IEF3ZXNvbWUgUHJvIDYuNS4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlLy0tPjxwYXRoIGQ9Ik0xNTIgMjQwYzAtMjkuMyA3LjgtNTYuOSAyMi04MC40YzMuMy01LjUgMi4yLTEyLjUtMi44LTE2LjdzLTEyLjQtNS42LTE4LjItMy4xYy0zMC44IDEzLjEtNTUuMyAzNi41LTcxLjMgNjUuNEM3NS42IDIxNi44IDcwLjggMjI4LjkgNjcuNSAyNDEuMkg0OGMtMjYuNSAwLTQ4IDIxLjUtNDggNDhzMjEuNSA0OCA0OCA0OEg3MS4yYzEgMjUuNCA2LjMgNTAuMSAxNS4zIDczLjFjNC41IDExLjUgMTYuNSAxOC4yIDI4LjUgMTUuOHMyMC4zLTEzLjkgMTkuMy0yNi41Yy03LjEtMTcuNi0xMS40LTM2LjQtMTIuOC01Ni40SDE1MmMwLTI2LjUtMjEuNS00OC00OC00OHMtNDggMjEuNS00OCA0OEgxNTJ6bTMyIDBjMC0yNi41LTIxLjUtNDgtNDgtNDhTODggMjEzLjUgODggMjQwaDk2em0yODAgMC4yYy0xNS0yNy4xLTM4LjMtNDkuNi02Ni4xLTY0LjNjLTUuOC0zLjEtMTMtMi4xLTE4LjIgMy4xcy02LjEgMTEuMi0yLjggMTYuN2MxNC4yIDIzLjUgMjIgNTEuMSAyMiA4MC40YzAgMjYuNS0yMS41IDQ4LTQ4IDQ4aC0zMi4zYy0xLjQgMjAtNS43IDM4LjgtMTIuOCA1Ni40Yy0xIDEyLjYgNi45IDI0LjEgMTkuMyAyNi41czI0LTQuMyAyOC41LTE1LjhjOS0yMyAxNC4zLTQ3LjcgMTUuMy03My4xSDQ2NGMyNi41IDAgNDgtMjEuNSA0OC00OHMtMjEuNS00OC00OC00OGgtMjMuN2MtMy4zLTEyLjUtOC4xLTI0LjYtMTQuMy0zNS44Yy0xNi0yOC45LTQwLjUtNTIuMy03MS4zLTY1LjRjLTUuOC0yLjUtMTIuOS0xLjUtMTguMiAzLjFzLTUuNSAxMi4yLTIuOCAxNy44YzE0LjIgMjMuNSAyMiA1MS4xIDIyIDgwLjRoMHptLTMyLS4yYzAtMjYuNS0yMS41LTQ4LTQ4LTQ4cy00OCAyMS41LTQ4IDQ4aDk2eiIvPjwvc3ZnPg==">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Assistente PEI">
 
@@ -23,13 +23,15 @@
   "imports": {
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0"
   }
 }
 </script>
 </head>
   <body class="bg-gray-100">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel" data-type="module" src="/index.jsx"></script>
   </body>
 </html>

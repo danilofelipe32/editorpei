@@ -1,22 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ViewType, Activity } from '../types';
 import { getAllActivities, saveActivities, addActivityToPei } from '../services/storageService';
 import { ActivityCard } from './ActivityCard';
 import { Modal } from './Modal';
 import { disciplineOptions } from '../constants';
 
-interface ActivityBankViewProps {
-    setView: (view: ViewType) => void;
-    editingPeiId: string | null;
-    onNavigateToEditor: (peiId: string) => void;
-}
-
-export const ActivityBankView: React.FC<ActivityBankViewProps> = ({ setView, editingPeiId, onNavigateToEditor }) => {
-    const [activities, setActivities] = useState<Activity[]>([]);
+export const ActivityBankView = ({ setView, editingPeiId, onNavigateToEditor }) => {
+    const [activities, setActivities] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+    const [editingActivity, setEditingActivity] = useState(null);
 
     useEffect(() => {
         setActivities(getAllActivities());
@@ -43,26 +36,26 @@ export const ActivityBankView: React.FC<ActivityBankViewProps> = ({ setView, edi
 
     const favoriteCount = useMemo(() => activities.filter(a => a.isFavorited).length, [activities]);
 
-    const updateAndSaveActivities = (updatedActivities: Activity[]) => {
+    const updateAndSaveActivities = (updatedActivities) => {
         setActivities(updatedActivities);
         saveActivities(updatedActivities);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = (id) => {
         if (window.confirm('Tem certeza que deseja excluir esta atividade do banco?')) {
             const updated = activities.filter(a => a.id !== id);
             updateAndSaveActivities(updated);
         }
     };
 
-    const handleToggleFavorite = (id: string) => {
+    const handleToggleFavorite = (id) => {
         const updated = activities.map(a => 
             a.id === id ? { ...a, isFavorited: !a.isFavorited } : a
         );
         updateAndSaveActivities(updated);
     };
     
-    const handleAddToPei = (activity: Activity) => {
+    const handleAddToPei = (activity) => {
         if (!editingPeiId) {
             alert('Por favor, abra um PEI na tela "PEIs Salvos" ou inicie um novo no "Editor PEI" antes de adicionar uma atividade.');
             return;
@@ -72,7 +65,7 @@ export const ActivityBankView: React.FC<ActivityBankViewProps> = ({ setView, edi
         onNavigateToEditor(editingPeiId);
     };
 
-    const handleOpenEditModal = (activity: Activity) => {
+    const handleOpenEditModal = (activity) => {
         setEditingActivity({ ...activity }); // Create a copy to edit
         setIsEditModalOpen(true);
     };
@@ -88,11 +81,11 @@ export const ActivityBankView: React.FC<ActivityBankViewProps> = ({ setView, edi
         // The state for skills/needs might have been converted to a string by the input.
         // We need to ensure it's an array of strings before saving.
         const skillsArray = typeof editingActivity.skills === 'string'
-            ? (editingActivity.skills as string).split(',').map(s => s.trim()).filter(Boolean)
+            ? (editingActivity.skills).split(',').map(s => s.trim()).filter(Boolean)
             : editingActivity.skills;
 
         const needsArray = typeof editingActivity.needs === 'string'
-            ? (editingActivity.needs as string).split(',').map(s => s.trim()).filter(Boolean)
+            ? (editingActivity.needs).split(',').map(s => s.trim()).filter(Boolean)
             : editingActivity.needs;
 
         const finalActivity = {
@@ -108,11 +101,11 @@ export const ActivityBankView: React.FC<ActivityBankViewProps> = ({ setView, edi
         handleCloseEditModal();
     };
 
-    const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleEditFormChange = (e) => {
         if (!editingActivity) return;
         const { id, value } = e.target;
         setEditingActivity(prev => ({
-            ...prev!,
+            ...prev,
             [id]: value
         }));
     };

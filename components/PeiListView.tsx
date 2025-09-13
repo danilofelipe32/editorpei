@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { ViewType, PeiRecord } from '../types';
 import { getAllPeis, deletePei } from '../services/storageService';
 
-interface PeiListViewProps {
-    setView: (view: ViewType) => void;
-    onEditPei: (id: string) => void;
-}
-
-export const PeiListView: React.FC<PeiListViewProps> = ({ setView, onEditPei }) => {
-  const [peis, setPeis] = useState<PeiRecord[]>([]);
+export const PeiListView = ({ setView, onEditPei }) => {
+  const [peis, setPeis] = useState([]);
 
   useEffect(() => {
     setPeis(getAllPeis());
   }, []);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id) => {
     if (window.confirm('Tem certeza que deseja excluir este PEI? Esta ação não pode ser desfeita.')) {
         deletePei(id);
         setPeis(getAllPeis()); // Refresh the list from storage
     }
   };
 
-  const formatDate = (isoString: string) => {
+  const formatDate = (isoString) => {
     return new Date(isoString).toLocaleDateString('pt-BR', {
         day: '2-digit',
         month: 'long',

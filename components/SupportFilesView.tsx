@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RagFile } from '../types';
 import { getAllRagFiles, saveRagFiles } from '../services/storageService';
 
-export const SupportFilesView: React.FC = () => {
-    const [files, setFiles] = useState<RagFile[]>([]);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+export const SupportFilesView = () => {
+    const [files, setFiles] = useState([]);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         setFiles(getAllRagFiles());
@@ -14,11 +13,13 @@ export const SupportFilesView: React.FC = () => {
         const uploadedFiles = event.target.files;
         if (!uploadedFiles) return;
 
-        const newFiles: RagFile[] = [...files];
+        const newFiles = [...files];
         const filePromises: Promise<void>[] = [];
 
-        Array.from(uploadedFiles).forEach(file => {
+        // FIX: Explicitly type 'file' as File to access its properties and satisfy FileReader.
+        Array.from(uploadedFiles).forEach((file: File) => {
             if (!files.some(f => f.name === file.name)) {
+                // FIX: Add <void> to Promise constructor to resolve type error.
                 const promise = new Promise<void>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = (e) => {
@@ -44,7 +45,7 @@ export const SupportFilesView: React.FC = () => {
         }
     };
 
-    const handleToggleSelect = (fileName: string) => {
+    const handleToggleSelect = (fileName) => {
         const updatedFiles = files.map(file =>
             file.name === fileName ? { ...file, selected: !file.selected } : file
         );
@@ -52,7 +53,7 @@ export const SupportFilesView: React.FC = () => {
         saveRagFiles(updatedFiles);
     };
 
-    const handleDeleteFile = (fileName: string) => {
+    const handleDeleteFile = (fileName) => {
         if (window.confirm(`Tem certeza que deseja excluir o ficheiro "${fileName}"?`)) {
             const updatedFiles = files.filter(file => file.name !== fileName);
             setFiles(updatedFiles);

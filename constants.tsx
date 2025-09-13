@@ -1,6 +1,4 @@
-
 import React from 'react';
-import { PeiFormSection } from './types';
 
 export const BrainIcon = () => <i className="fa-solid fa-brain"></i>;
 export const EditorIcon = () => <i className="fa-solid fa-file-lines"></i>;
@@ -14,7 +12,7 @@ export const disciplineOptions = [
     "Filosofia", "Sociologia", "Química", "Física", "Biologia"
 ];
 
-export const fieldOrderForPreview: PeiFormSection[] = [
+export const fieldOrderForPreview = [
     { title: "1. Identificação do Estudante", fields: [
         { id: 'aluno-nome', label: 'Aluno' }, { id: 'aluno-nasc', label: 'Data de Nascimento' },
         { id: 'aluno-ano', label: 'Ano Escolar' }, { id: 'aluno-escola', label: 'Escola' },
@@ -53,7 +51,7 @@ export const fieldOrderForPreview: PeiFormSection[] = [
     ]}
 ];
 
-export const labelToIdMap = fieldOrderForPreview.flatMap(s => s.fields).reduce((acc: Record<string, string>, field) => {
+export const labelToIdMap = fieldOrderForPreview.flatMap(s => s.fields).reduce((acc, field) => {
     acc[field.label] = field.id;
     return acc;
 }, {});

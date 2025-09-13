@@ -1,21 +1,12 @@
 import React from 'react';
-import { Activity } from '../types';
 
-interface ActivityCardProps {
-    activity: Activity;
-    onDelete: (id: string) => void;
-    onToggleFavorite: (id: string) => void;
-    onAddToPei: (activity: Activity) => void;
-    onEdit: (activity: Activity) => void;
-}
-
-const Tag: React.FC<{ children: React.ReactNode; colorClass: string }> = ({ children, colorClass }) => (
+const Tag = ({ children, colorClass }) => (
     <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full ${colorClass}`}>
         {children}
     </span>
 );
 
-export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit }) => {
+export const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit }) => {
     return (
         <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 transition-shadow hover:shadow-lg">
             <div className="flex justify-between items-start mb-3">

@@ -1,26 +1,6 @@
 import React, { useState } from 'react';
 
-interface TextAreaWithActionsProps {
-  id: string;
-  label: string;
-  rows?: number;
-  placeholder?: string;
-  value: string;
-  onChange: (value: string) => void;
-  onAiClick?: () => void;
-  onSmartClick?: () => void;
-  onSuggestClick?: () => void;
-  onEditClick: () => void;
-  isAiLoading?: boolean;
-  isSmartLoading?: boolean;
-  isSuggestLoading?: boolean;
-  isGoal?: boolean;
-  helpText?: string;
-  error?: string;
-  isAiActionDisabled?: boolean;
-}
-
-export const TextAreaWithActions: React.FC<TextAreaWithActionsProps> = ({
+export const TextAreaWithActions = ({
   id,
   label,
   rows = 4,
