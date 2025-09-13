@@ -1,0 +1,5 @@
+{
+  "name": "Assistente PEI com IA",
+  "description": "Uma aplicação web PWA para auxiliar educadores e profissionais da educação na elaboração de Planos Educacionais Individualizados (PEI), utilizando IA para gerar conteúdo, analisar metas e sugerir atividades.",
+  "requestFramePermissions": []
+}
