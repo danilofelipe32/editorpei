@@ -12,7 +12,20 @@ import { PrivacyPolicyView } from './components/PrivacyPolicyView';
 
 
 const App: React.FC = () => {
-    const [view, setView] = useState<ViewType>('pei-form-view');
+    // Função para obter a visualização inicial da URL para suportar os atalhos do PWA
+    const getInitialView = (): ViewType => {
+        const params = new URLSearchParams(window.location.search);
+        const viewFromUrl = params.get('view') as ViewType;
+        const validViews: ViewType[] = ['pei-form-view', 'activity-bank-view', 'pei-list-view', 'files-view', 'privacy-policy-view'];
+        if (viewFromUrl && validViews.includes(viewFromUrl)) {
+            // Limpa a URL para evitar recarregamentos na mesma view
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return viewFromUrl;
+        }
+        return 'pei-form-view'; // Visualização padrão
+    };
+
+    const [view, setView] = useState<ViewType>(getInitialView());
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [editingPeiId, setEditingPeiId] = useState<string | null>(null);
 

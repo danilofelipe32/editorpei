@@ -2,25 +2,41 @@
 {
   "short_name": "Assistente PEI",
   "name": "Assistente PEI com IA",
+  "description": "Uma aplicação web PWA para auxiliar educadores e profissionais da educação na elaboração de Planos Educacionais Individualizados (PEI), utilizando IA para gerar conteúdo, analisar metas e sugerir atividades.",
   "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "theme_color": "#5d3eef",
-  "background_color": "#f8f9fa"
+  "background_color": "#f8f9fa",
+  "shortcuts": [
+    {
+      "name": "Criar Novo PEI",
+      "short_name": "Novo PEI",
+      "description": "Começar a preencher um novo Plano Educacional Individualizado.",
+      "url": "/?view=pei-form-view",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Banco de Atividades",
+      "short_name": "Atividades",
+      "description": "Acessar o banco de atividades e recursos pedagógicos.",
+      "url": "/?view=activity-bank-view",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    }
+  ]
 }
