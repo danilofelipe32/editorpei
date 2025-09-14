@@ -1,47 +1,31 @@
-// Este serviço agora fornece uma interface genérica para chamar a API ApiFreeLMM.
-// A implementação anterior foi substituída conforme a nova documentação.
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-const API_URL = 'https://apifreellm.com/api/chat'; // Endpoint da ApiFreeLMM.
+// A chave da API é gerenciada pelo ambiente de execução, conforme as diretrizes.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const callGenerativeAI = async (prompt: string) => {
+export const callGenerativeAI = async (prompt: string): Promise<string> => {
     try {
-        // Usando fetch para chamar a API ApiFreeLMM.
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: prompt
-            })
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                systemInstruction: "Você é um assistente especializado em educação, focado na criação de Planos Educacionais Individualizados (PEI). Suas respostas devem ser profissionais, bem estruturadas e direcionadas para auxiliar educadores.",
+            }
         });
 
-        // A API sempre retorna HTTP 200, então verificamos a resposta JSON para o status.
-        if (!response.ok) {
-            // Este bloco lida com erros de rede, não com erros da API.
-            throw new Error(`Erro de rede: ${response.statusText}`);
+        const text = response.text;
+        if (!text) {
+            throw new Error("A resposta da IA veio vazia.");
         }
-
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const text = data.response?.trim();
-            if (!text) {
-                console.error("Invalid API response structure:", data);
-                throw new Error("A resposta da IA veio vazia, embora o status seja de sucesso.");
-            }
-            return text;
-        } else {
-            // Lida com erros da API, como 'rate_limited' ou 'error'.
-            const errorMessage = data.error || 'Erro desconhecido da API.';
-            console.error("API Error Response:", data);
-            throw new Error(`A API retornou um erro: ${errorMessage}`);
-        }
+        return text.trim();
 
     } catch (error) {
         console.error("AI Service Error:", error);
         if (error instanceof Error) {
-             throw new Error(`Falha na comunicação com a IA. ${error.message}`);
+             if (error.message.includes('API key not valid')) {
+                 throw new Error("A chave da API não é válida. Verifique a configuração do ambiente.");
+             }
+             throw new Error(`Falha na comunicação com a IA. Detalhes: ${error.message}`);
         }
         throw new Error("Ocorreu uma falha desconhecida na comunicação com a IA.");
     }
