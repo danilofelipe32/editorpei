@@ -4,10 +4,28 @@ const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
+  // App source files
   './index.tsx',
+  './App.tsx',
+  './types.ts',
+  './constants.tsx',
+  './services/geminiService.ts',
+  './services/storageService.ts',
+  './components/Modal.tsx',
+  './components/TextAreaWithActions.tsx',
+  './components/PeiFormView.tsx',
+  './components/ActivityBankView.tsx',
+  './components/PeiListView.tsx',
+  './components/SupportFilesView.tsx',
+  './components/PrivacyPolicyView.tsx',
+  './components/ActivityCard.tsx',
+  // External dependencies
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-  'https://unpkg.com/@babel/standalone/babel.min.js'
+  'https://unpkg.com/@babel/standalone/babel.min.js',
+  'https://aistudiocdn.com/react@^19.1.1',
+  'https://aistudiocdn.com/react-dom@^19.1.1',
+  'https://aistudiocdn.com/@google/genai@^1.19.0'
 ];
 
 // Instala o service worker e armazena os ativos essenciais no cache.
