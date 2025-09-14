@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { BrainIcon, EditorIcon, ActivityIcon, ArchiveIcon, PaperclipIcon, ShieldIcon } from './constants';
+import { useAppStore } from './store';
 
-// Since this is a large component, we define sub-views here.
-// In a larger project, these would be in separate files.
+// Views
 import { PeiFormView } from './components/PeiFormView';
 import { ActivityBankView } from './components/ActivityBankView';
 import { PeiListView } from './components/PeiListView';
@@ -11,38 +11,16 @@ import { PrivacyPolicyView } from './components/PrivacyPolicyView';
 
 
 const App = () => {
-    // Função para obter a visualização inicial da URL para suportar os atalhos do PWA
-    const getInitialView = () => {
-        const params = new URLSearchParams(window.location.search);
-        const viewFromUrl = params.get('view');
-        const validViews = ['pei-form-view', 'activity-bank-view', 'pei-list-view', 'files-view', 'privacy-policy-view'];
-        if (viewFromUrl && validViews.includes(viewFromUrl)) {
-            // Limpa a URL para evitar recarregamentos na mesma view
-            window.history.replaceState({}, document.title, window.location.pathname);
-            return viewFromUrl;
-        }
-        return 'pei-form-view'; // Visualização padrão
-    };
-
-    const [view, setView] = useState(getInitialView());
+    // Read state and actions from the global store
+    const { currentView, editingPeiId } = useAppStore();
+    const { navigateToView, navigateToNewPei } = useAppStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [editingPeiId, setEditingPeiId] = useState(null);
-
-    const handleEditPei = (peiId) => {
-        setEditingPeiId(peiId);
-        setView('pei-form-view');
-    };
-
-    const handleNewPei = () => {
-        setEditingPeiId(null);
-        setView('pei-form-view');
-    };
 
     const handleNavigation = (targetView) => {
         if (targetView === 'pei-form-view') {
-            handleNewPei();
+            navigateToNewPei();
         } else {
-            setView(targetView);
+            navigateToView(targetView);
         }
         setIsSidebarOpen(false);
     };
@@ -60,27 +38,26 @@ const App = () => {
                 </button>
             </header>
             
-            <Sidebar currentView={view} onNavigate={handleNavigation} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+            <Sidebar 
+                isSidebarOpen={isSidebarOpen} 
+                onNavigate={handleNavigation}
+            />
             
             <main className="flex-1 flex flex-col overflow-hidden">
                  <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-100">
-                    <div className={view === 'pei-form-view' ? '' : 'hidden'}>
+                    {currentView === 'pei-form-view' && (
                         <PeiFormView 
                             key={editingPeiId || 'new'} 
                             editingPeiId={editingPeiId} 
-                            onSaveSuccess={() => setView('pei-list-view')} 
+                            onSaveSuccess={() => navigateToView('pei-list-view')} 
                         />
-                    </div>
-                    <div className={view === 'activity-bank-view' ? '' : 'hidden'}>
-                        <ActivityBankView 
-                            setView={setView}
-                            editingPeiId={editingPeiId}
-                            onNavigateToEditor={handleEditPei}
-                        />
-                    </div>
-                    <div className={view === 'pei-list-view' ? '' : 'hidden'}><PeiListView setView={setView} onEditPei={handleEditPei} /></div>
-                    <div className={view === 'files-view' ? '' : 'hidden'}><SupportFilesView /></div>
-                    <div className={view === 'privacy-policy-view' ? 'flex flex-col h-full' : 'hidden'}><PrivacyPolicyView setView={setView} /></div>
+                    )}
+                    {currentView === 'activity-bank-view' && (
+                        <ActivityBankView />
+                    )}
+                    {currentView === 'pei-list-view' && <PeiListView />}
+                    {currentView === 'files-view' && <SupportFilesView />}
+                    {currentView === 'privacy-policy-view' && <PrivacyPolicyView />}
                  </div>
             </main>
         </div>
@@ -88,7 +65,8 @@ const App = () => {
 };
 
 
-const Sidebar = ({ currentView, onNavigate, isSidebarOpen, setIsSidebarOpen }) => {
+const Sidebar = ({ isSidebarOpen, onNavigate }) => {
+    const currentView = useAppStore((state) => state.currentView);
     
     const navItems = [
         { id: 'pei-form-view', icon: <EditorIcon />, label: 'Editor PEI' },
@@ -107,6 +85,7 @@ const Sidebar = ({ currentView, onNavigate, isSidebarOpen, setIsSidebarOpen }) =
             transform md:transform-none transition-transform duration-300 ease-in-out
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             flex flex-col p-6`}>
+            {/* The sidebar content remains the same, but now it reads 'currentView' from the store */}
             <div className="flex items-center gap-3 mb-2">
                 <div className="text-3xl text-indigo-600"><BrainIcon /></div>
                 <h1 className="text-xl font-bold text-gray-800">Assistente PEI</h1>

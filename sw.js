@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'assistente-pei-pwa-cache-v3';
+const CACHE_NAME = 'assistente-pei-pwa-cache-v4'; // Incremented cache version
 const urlsToCache = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const urlsToCache = [
   // App source files
   './index.tsx',
   './App.tsx',
+  './store.ts', // Added new store file
   './types.ts',
   './constants.tsx',
   './services/geminiService.ts',
@@ -25,7 +26,8 @@ const urlsToCache = [
   'https://unpkg.com/@babel/standalone/babel.min.js',
   'https://aistudiocdn.com/react@^19.1.1',
   'https://aistudiocdn.com/react-dom@^19.1.1',
-  'https://aistudiocdn.com/@google/genai@^1.19.0'
+  'https://aistudiocdn.com/@google/genai@^1.19.0',
+  'https://aistudiocdn.com/zustand@^4.5.4' // Added zustand to cache
 ];
 
 // Instala o service worker e armazena os ativos essenciais no cache.

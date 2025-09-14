@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getAllActivities, saveActivities, addActivityToPei } from '../services/storageService';
+import { useAppStore } from '../store';
 import { ActivityCard } from './ActivityCard';
 import { Modal } from './Modal';
 import { disciplineOptions } from '../constants';
 
-export const ActivityBankView = ({ setView, editingPeiId, onNavigateToEditor }) => {
+export const ActivityBankView = () => {
     const [activities, setActivities] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState(null);
+    
+    // Get state and actions from the global store
+    const { editingPeiId, navigateToEditPei } = useAppStore();
 
     useEffect(() => {
         setActivities(getAllActivities());
@@ -62,7 +66,7 @@ export const ActivityBankView = ({ setView, editingPeiId, onNavigateToEditor }) 
         }
         addActivityToPei(editingPeiId, activity);
         alert(`Atividade "${activity.title}" adicionada ao PEI atual.`);
-        onNavigateToEditor(editingPeiId);
+        navigateToEditPei(editingPeiId);
     };
 
     const handleOpenEditModal = (activity) => {
@@ -78,8 +82,6 @@ export const ActivityBankView = ({ setView, editingPeiId, onNavigateToEditor }) 
     const handleSaveEditedActivity = () => {
         if (!editingActivity) return;
 
-        // The state for skills/needs might have been converted to a string by the input.
-        // We need to ensure it's an array of strings before saving.
         const skillsArray = typeof editingActivity.skills === 'string'
             ? (editingActivity.skills).split(',').map(s => s.trim()).filter(Boolean)
             : editingActivity.skills;

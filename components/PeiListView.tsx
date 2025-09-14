@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getAllPeis, deletePei } from '../services/storageService';
+import { useAppStore } from '../store';
 
-export const PeiListView = ({ setView, onEditPei }) => {
+export const PeiListView = () => {
   const [peis, setPeis] = useState([]);
+  const { navigateToEditPei, navigateToNewPei } = useAppStore();
 
   useEffect(() => {
     setPeis(getAllPeis());
@@ -28,7 +30,7 @@ export const PeiListView = ({ setView, onEditPei }) => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">PEIs Salvos</h2>
         <button 
-            onClick={() => onEditPei('')} // Use onEditPei with empty string/null to signal new
+            onClick={navigateToNewPei}
             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
         >
             <i className="fa-solid fa-plus"></i>
@@ -52,7 +54,7 @@ export const PeiListView = ({ setView, onEditPei }) => {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <button
-                            onClick={() => onEditPei(pei.id)}
+                            onClick={() => navigateToEditPei(pei.id)}
                             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
                             title="Editar PEI"
                         >

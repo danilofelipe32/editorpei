@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useAppStore } from '../store';
 
-export const PrivacyPolicyView = ({ setView }) => {
+export const PrivacyPolicyView = () => {
   const [isChecked, setIsChecked] = useState(false);
+  const { navigateToNewPei } = useAppStore();
 
   // Reusable component for section titles
   const SectionTitle = ({ children }) => (
@@ -17,7 +19,7 @@ export const PrivacyPolicyView = ({ setView }) => {
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Política de Privacidade</h2>
         <button 
-            onClick={() => setView('pei-form-view')}
+            onClick={navigateToNewPei}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200"
         >
             Voltar ao Editor
