@@ -1,7 +1,8 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-// A chave da API é gerenciada pelo ambiente de execução, conforme as diretrizes.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// A chave da API foi inserida diretamente no código, conforme solicitado.
+const apiKey = "AIzaSyD6UCwmLhN0eMKrLw53YUoJS3QzLxr0rmk";
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 export const callGenerativeAI = async (prompt: string): Promise<string> => {
     try {
