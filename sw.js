@@ -1,11 +1,10 @@
 // sw.js
 const CACHE_NAME = 'assistente-pei-pwa-cache-v3';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.ico',
-  '/index.tsx',
+  './',
+  './index.html',
+  './manifest.json',
+  './index.tsx',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
   'https://unpkg.com/@babel/standalone/babel.min.js'
