@@ -1,57 +1,48 @@
-// Este serviço agora fornece uma interface genérica para chamar uma API LLM gratuita e compatível com OpenAI.
-// A implementação anterior usando @google/genai foi substituída conforme solicitação do usuário.
+// Este serviço agora fornece uma interface genérica para chamar a API ApiFreeLMM.
+// A implementação anterior foi substituída conforme a nova documentação.
 
-const API_URL = 'https://api.pawan.krd/v1/chat/completions'; // Um endpoint conhecido e gratuito compatível com OpenAI.
-const MODEL_NAME = 'pai-001-light'; // Usando um modelo leve, adequado para níveis gratuitos.
+const API_URL = 'https://apifreellm.com/api/chat'; // Endpoint da ApiFreeLMM.
 
 export const callGenerativeAI = async (prompt: string) => {
     try {
-        // Usando fetch para chamar a API compatível com OpenAI.
+        // Usando fetch para chamar a API ApiFreeLMM.
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // A chave da API é passada no cabeçalho de Autorização.
-                // Conforme as diretrizes, a chave deve vir de process.env.API_KEY.
-                // O usuário deve garantir que esta variável de ambiente esteja disponível
-                // no lado do cliente, por exemplo, através de uma substituição em tempo de compilação no Netlify.
-                'Authorization': `Bearer ${process.env.API_KEY}`
             },
             body: JSON.stringify({
-                model: MODEL_NAME,
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
+                message: prompt
             })
         });
 
+        // A API sempre retorna HTTP 200, então verificamos a resposta JSON para o status.
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({})); // Lida com respostas de erro que não são JSON.
-            console.error("API Error Response:", errorData);
-            const errorMessage = errorData?.error?.message || response.statusText;
-            throw new Error(`A API retornou um erro: ${response.status}. ${errorMessage}`);
+            // Este bloco lida com erros de rede, não com erros da API.
+            throw new Error(`Erro de rede: ${response.statusText}`);
         }
 
         const data = await response.json();
         
-        // Extrai o texto da resposta seguindo a estrutura padrão compatível com OpenAI.
-        const text = data.choices?.[0]?.message?.content?.trim();
-        
-        if (!text) {
-            console.error("Invalid API response structure:", data);
-            throw new Error("A resposta da IA não continha o texto esperado.");
+        if (data.status === 'success') {
+            const text = data.response?.trim();
+            if (!text) {
+                console.error("Invalid API response structure:", data);
+                throw new Error("A resposta da IA veio vazia, embora o status seja de sucesso.");
+            }
+            return text;
+        } else {
+            // Lida com erros da API, como 'rate_limited' ou 'error'.
+            const errorMessage = data.error || 'Erro desconhecido da API.';
+            console.error("API Error Response:", data);
+            throw new Error(`A API retornou um erro: ${errorMessage}`);
         }
-
-        return text;
 
     } catch (error) {
         console.error("AI Service Error:", error);
         if (error instanceof Error) {
              throw new Error(`Falha na comunicação com a IA. ${error.message}`);
         }
-        throw new Error("Falha na comunicação com a IA. Verifique sua conexão e a configuração da chave de API.");
+        throw new Error("Ocorreu uma falha desconhecida na comunicação com a IA.");
     }
 };
