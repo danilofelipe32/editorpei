@@ -1,3 +1,10 @@
+// FIX: Polyfill 'process' for browser environment to prevent crash from process.env.API_KEY access.
+// This allows the app to load, although AI features will require a valid API key to be set.
+if (typeof window.process === 'undefined') {
+  // @ts-ignore
+  window.process = { env: { API_KEY: '' } };
+}
+
 // FIX: Add necessary imports for React, ReactDOM, Zustand, and Google GenAI to resolve undefined errors across the application.
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom/client';

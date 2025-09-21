@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'assistente-pei-pwa-cache-v6'; // Incremented cache version
+const CACHE_NAME = 'assistente-pei-pwa-cache-v7'; // Incremented cache version
 const urlsToCache = [
   './',
   './index.html',
@@ -37,6 +37,13 @@ self.addEventListener('install', event => {
 
 // Intercepta as requisições de rede.
 self.addEventListener('fetch', event => {
+  const requestUrl = new URL(event.request.url);
+
+  // Apenas lida com protocolos http/https. Ignora outros como chrome-extension://.
+  if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') {
+    return;
+  }
+
   // Ignora requisições que não são GET
   if (event.request.method !== 'GET') {
     return;
