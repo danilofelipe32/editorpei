@@ -454,6 +454,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
                 <h3 className="text-lg font-bold text-gray-800 pr-4 flex-1">{activity.title}</h3>
                 <div className="flex items-center gap-1 flex-shrink-0">
                     <button
+                        type="button"
                         onClick={() => onToggleFavorite(activity.id)}
                         className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors
                             ${activity.isFavorited 
@@ -465,6 +466,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
                         <i className={`fa-solid fa-star ${activity.isFavorited ? '' : 'fa-regular'}`}></i>
                     </button>
                     <button
+                        type="button"
                         onClick={() => onEdit(activity)}
                         className="w-9 h-9 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-blue-600 rounded-full transition-colors"
                         title="Editar atividade"
@@ -472,6 +474,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
                         <i className="fa-solid fa-pencil"></i>
                     </button>
                      <button
+                        type="button"
                         onClick={() => onAddToPei(activity)}
                         className="w-9 h-9 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-indigo-600 rounded-full transition-colors"
                         title="Adicionar ao PEI atual"
@@ -479,6 +482,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
                         <i className="fa-solid fa-plus"></i>
                     </button>
                     <button
+                        type="button"
                         onClick={() => onDelete(activity.id)}
                         className="w-9 h-9 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-red-600 rounded-full transition-colors"
                         title="Excluir atividade"
@@ -829,10 +833,10 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                             content: renderSuggestedActivities(activities),
                             footer: (
                                 <>
-                                    <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200">
                                         Fechar
                                     </button>
-                                    <button onClick={handleSaveActivities} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                                    <button type="button" onClick={handleSaveActivities} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2">
                                         <i className="fa-solid fa-plus"></i> Adicionar ao Banco
                                     </button>
                                 </>
@@ -1141,6 +1145,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                 footer={
                     <>
                         <button
+                            type="button"
                             onClick={() => {
                                 navigator.clipboard.writeText(fullPeiContent);
                                 alert('Texto copiado para a área de transferência!');
@@ -1150,6 +1155,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                             Copiar Texto
                         </button>
                         <button
+                            type="button"
                             onClick={() => setIsFullPeiModalOpen(false)}
                             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
                         >
@@ -1171,6 +1177,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                 onClose={() => setIsPreviewModalOpen(false)}
                 footer={
                     <button
+                        type="button"
                         onClick={() => setIsPreviewModalOpen(false)}
                         className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
                     >
@@ -1211,12 +1218,14 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                     footer={
                         <>
                             <button
+                                type="button"
                                 onClick={closeEditModal}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200"
                             >
                                 Cancelar
                             </button>
                             <button
+                                type="button"
                                 onClick={handleEditModalSave}
                                 className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
                             >
@@ -1579,10 +1588,10 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
                     onClose={handleCloseEditModal}
                     footer={
                         <>
-                            <button onClick={handleCloseEditModal} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200">
+                            <button type="button" onClick={handleCloseEditModal} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200">
                                 Cancelar
                             </button>
-                            <button onClick={handleSaveEditedActivity} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+                            <button type="button" onClick={handleSaveEditedActivity} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
                                 Salvar Alterações
                             </button>
                         </>
@@ -1724,6 +1733,7 @@ const PeiListView = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">PEIs Salvos</h2>
         <button 
+            type="button"
             onClick={navigateToNewPei}
             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
         >
@@ -1748,6 +1758,7 @@ const PeiListView = () => {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <button
+                            type="button"
                             onClick={() => navigateToEditPei(pei.id)}
                             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
                             title="Editar PEI"
@@ -1756,6 +1767,7 @@ const PeiListView = () => {
                             <span className="hidden sm:inline">Editar</span>
                         </button>
                         <button
+                            type="button"
                             onClick={() => handleDelete(pei.id)}
                             className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
                             title="Excluir PEI"
@@ -1846,6 +1858,7 @@ const SupportFilesView = () => {
             />
             
             <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full mb-6 px-6 py-3 text-base font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
@@ -1875,6 +1888,7 @@ const SupportFilesView = () => {
                                 {file.name}
                             </div>
                             <button
+                                type="button"
                                 onClick={() => handleDeleteFile(file.name)}
                                 className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
                                 title="Excluir Ficheiro"
@@ -1908,6 +1922,7 @@ const PrivacyPolicyView = () => {
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Política de Privacidade</h2>
         <button 
+            type="button"
             onClick={navigateToNewPei}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200"
         >
@@ -2020,7 +2035,7 @@ const App = () => {
                     <div className="text-2xl text-indigo-600"><BrainIcon /></div>
                     <h1 className="text-xl font-bold text-gray-800">Assistente PEI</h1>
                 </div>
-                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-600">
+                <button type="button" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-600">
                     <i className="fa-solid fa-bars text-xl"></i>
                 </button>
             </header>
