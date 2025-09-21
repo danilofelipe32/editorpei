@@ -1,9 +1,10 @@
 // sw.js
-const CACHE_NAME = 'assistente-pei-pwa-cache-v5'; // Incremented cache version
+const CACHE_NAME = 'assistente-pei-pwa-cache-v6'; // Incremented cache version
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
+  './sw.js',
   // App source files
   './index.tsx', // Main consolidated file
   // External dependencies
