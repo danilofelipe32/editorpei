@@ -589,6 +589,33 @@ const generateAndPrintPdf = (peiRecord: PeiRecord | { alunoNome: string, data: P
 };
 
 
+// --- Accordion Component for PeiFormView ---
+const AccordionSection = ({ title, isOpen, onToggle, children }) => {
+    return (
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            <button
+                type="button"
+                onClick={onToggle}
+                className={`w-full flex justify-between items-center p-6 text-left transition-colors duration-200 ${isOpen ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
+                aria-expanded={isOpen}
+            >
+                <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+                <i className={`fa-solid fa-chevron-down text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}></i>
+            </button>
+            <div
+                className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px]' : 'max-h-0'}`}
+            >
+                <div className="p-6 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // --- MERGED FROM components/PeiFormView.tsx ---
 const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [currentPeiId, setCurrentPeiId] = useState<string | null>(editingPeiId);
@@ -616,7 +643,12 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [isAnalyzingPei, setIsAnalyzingPei] = useState(false);
     const [isSmartAnalysisModalOpen, setIsSmartAnalysisModalOpen] = useState(false);
     const [smartAnalysisData, setSmartAnalysisData] = useState(null);
+    const [openAccordionSection, setOpenAccordionSection] = useState<number | null>(0);
 
+
+    const handleAccordionToggle = (index: number) => {
+        setOpenAccordionSection(prevIndex => (prevIndex === index ? null : index));
+    };
 
     const helpTexts = {
         'id-diagnostico': 'Descreva o diagnóstico do aluno (se houver) e as necessidades educacionais específicas decorrentes dele. Ex: TDAH, Dislexia, TEA.',
@@ -722,6 +754,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
         if (!isValid) {
             const firstErrorField = document.getElementById(Object.keys(newErrors)[0]);
             firstErrorField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setOpenAccordionSection(0); // Open the first section where errors are likely to be
             alert('Por favor, preencha todos os campos obrigatórios destacados.');
         }
         return isValid;
@@ -1588,15 +1621,18 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                 </p>
             </div>
 
-            <form onSubmit={handleSavePei}>
+            <form onSubmit={handleSavePei} className="space-y-4">
                 {fieldOrderForPreview.map((section, sectionIndex) => (
-                    <div key={sectionIndex} className="bg-white p-6 rounded-xl shadow-md mb-8 border border-gray-200">
-                        <h3 className="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-3 mb-6">{section.title}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            {section.fields.map(field => renderField(field))}
-                        </div>
-                    </div>
+                    <AccordionSection
+                        key={sectionIndex}
+                        title={section.title}
+                        isOpen={openAccordionSection === sectionIndex}
+                        onToggle={() => handleAccordionToggle(sectionIndex)}
+                    >
+                        {section.fields.map(field => renderField(field))}
+                    </AccordionSection>
                 ))}
+
                 <div className="bg-white p-6 rounded-xl shadow-md mt-6 border border-gray-200 grid grid-cols-2 gap-3 md:flex md:justify-end md:items-center md:flex-wrap md:gap-4">
                     <div className="col-span-2 text-center md:text-left md:mr-auto md:col-auto text-sm text-gray-500 italic pl-2 transition-opacity duration-500">
                         {autoSaveStatus === 'salvando' && (
