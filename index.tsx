@@ -121,21 +121,29 @@ const labelToIdMap = fieldOrderForPreview.flatMap(s => s.fields).reduce((acc, fi
 }, {});
 
 
-// --- Service for ApiFreeLLM ---
-const callGenerativeAI = async (prompt: string): Promise<string> => {
-    // The ApiFreeLLM doesn't support system instructions directly in the chat endpoint.
-    // We prepend the instruction to the user's prompt.
-    const fullPrompt = `Você é um assistente especializado em educação, focado na criação de Planos Educacionais Individualizados (PEI). Suas respostas devem ser profissionais, bem estruturadas e direcionadas para auxiliar educadores.\n\n---\n\n${prompt}`;
+// --- Service for ApiFreeLLM with Rate Limiting and Queue ---
+// Queue to hold pending AI requests. Each item is a { prompt, resolve, reject } object.
+const requestQueue: { prompt: string; resolve: (value: string) => void; reject: (reason?: any) => void; }[] = [];
+let isProcessing = false; // Flag to check if the queue is being processed.
+const RATE_LIMIT_DELAY = 5100; // 5.1 seconds to be safe, as the API limit is 1 request every 5 seconds.
+
+// Function to process the queue one by one.
+const processQueue = async () => {
+    if (requestQueue.length === 0) {
+        isProcessing = false;
+        return;
+    }
+
+    isProcessing = true;
+    const { prompt, resolve, reject } = requestQueue.shift()!; // Get the oldest request
 
     try {
+        const fullPrompt = `Você é um assistente especializado em educação, focado na criação de Planos Educacionais Individualizados (PEI). Suas respostas devem ser profissionais, bem estruturadas e direcionadas para auxiliar educadores.\n\n---\n\n${prompt}`;
+
         const response = await fetch("https://apifreellm.com/api/chat", {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                "message": fullPrompt
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ "message": fullPrompt })
         });
 
         if (!response.ok) {
@@ -148,21 +156,43 @@ const callGenerativeAI = async (prompt: string): Promise<string> => {
             if (!data.response) {
                 throw new Error("A resposta da IA veio vazia.");
             }
-            return data.response.trim();
-        } else if (data.status === 'rate_limited') {
-            throw new Error(`Limite de taxa excedido. Por favor, aguarde ${data.retry_after} segundos antes de tentar novamente.`);
+            resolve(data.response.trim());
+            // Wait before processing the next item.
+            setTimeout(processQueue, RATE_LIMIT_DELAY);
         } else {
-            // Handles 'error' status and any other unexpected statuses
+            // If rate limited, re-queue the request and wait for the specified time.
+            if (data.status === 'rate_limited' && data.retry_after) {
+                console.warn(`Rate limited by API. Retrying after ${data.retry_after} seconds.`);
+                // Put the request back at the front of the queue
+                requestQueue.unshift({ prompt, resolve, reject });
+                // Wait for the specified time plus a small buffer before retrying
+                setTimeout(processQueue, (data.retry_after * 1000) + 200);
+                return; // Exit to avoid the standard delay timeout
+            }
+            // For other errors, reject the promise.
             throw new Error(`A API retornou um erro: ${data.error || 'Erro desconhecido.'} (Status: ${data.status})`);
         }
-
     } catch (error) {
         console.error("AI Service Error:", error);
+        let errorMessage = "Ocorreu uma falha desconhecida na comunicação com a IA.";
         if (error instanceof Error) {
-             throw new Error(`Falha na comunicação com a IA. Detalhes: ${error.message}`);
+            errorMessage = `Falha na comunicação com a IA. Detalhes: ${error.message}`;
         }
-        throw new Error("Ocorreu uma falha desconhecida na comunicação com a IA.");
+        reject(new Error(errorMessage));
+
+        // Even on error, we continue processing the queue after a delay to avoid getting stuck.
+        setTimeout(processQueue, RATE_LIMIT_DELAY);
     }
+};
+
+// The public function that components will call to add a request to the queue.
+const callGenerativeAI = (prompt: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        requestQueue.push({ prompt, resolve, reject });
+        if (!isProcessing) {
+            processQueue();
+        }
+    });
 };
 
 
@@ -801,24 +831,43 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     }, [errors]);
     
     const buildAiContext = (fieldIdToExclude) => {
+        const RAG_CONTEXT_CHAR_LIMIT = 8000;
+        const FORM_CONTEXT_CHAR_LIMIT = 7000;
+
         const allRagFiles = getAllRagFiles();
         const selectedFiles = allRagFiles.filter(f => f.selected);
         let ragContext = '';
         if (selectedFiles.length > 0) {
+            let rawRagContent = selectedFiles.map(f => `Ficheiro: ${f.name}\nConteúdo:\n${f.content}\n\n`).join('');
+            
+            if (rawRagContent.length > RAG_CONTEXT_CHAR_LIMIT) {
+                console.warn(`O contexto RAG excedeu ${RAG_CONTEXT_CHAR_LIMIT} caracteres e foi truncado.`);
+                rawRagContent = rawRagContent.substring(0, RAG_CONTEXT_CHAR_LIMIT);
+                rawRagContent += "\n\n... (O conteúdo dos ficheiros de apoio foi truncado por exceder o limite de tamanho)\n\n";
+            }
+
             ragContext = '--- INÍCIO DOS FICHEIROS DE APOIO ---\n\n' +
-                selectedFiles.map(f => `Ficheiro: ${f.name}\nConteúdo:\n${f.content}\n\n`).join('') +
+                rawRagContent +
                 '--- FIM DOS FICHEIROS DE APOIO ---\n\n';
         }
 
+        let rawFormContent = fieldOrderForPreview
+            .flatMap(section => section.fields)
+            .map(field => {
+                const value = peiData[field.id];
+                return value && field.id !== fieldIdToExclude ? `${field.label}: ${value}` : null;
+            })
+            .filter(Boolean)
+            .join('\n');
+
+        if (rawFormContent.length > FORM_CONTEXT_CHAR_LIMIT) {
+             console.warn(`O contexto do formulário excedeu ${FORM_CONTEXT_CHAR_LIMIT} caracteres e foi truncado.`);
+            rawFormContent = rawFormContent.substring(0, FORM_CONTEXT_CHAR_LIMIT);
+            rawFormContent += "\n\n... (O conteúdo do formulário foi truncado por exceder o limite de tamanho)";
+        }
+
         const formContext = '--- INÍCIO DO CONTEXTO DO PEI ATUAL ---\n\n' +
-            fieldOrderForPreview
-                .flatMap(section => section.fields)
-                .map(field => {
-                    const value = peiData[field.id];
-                    return value && field.id !== fieldIdToExclude ? `${field.label}: ${value}` : null;
-                })
-                .filter(Boolean)
-                .join('\n') +
+            rawFormContent +
             '\n--- FIM DO CONTEXTO DO PEI ATUAL ---\n\n';
 
         return { ragContext, formContext };
