@@ -9,7 +9,6 @@ if (typeof window.process === 'undefined') {
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { create } from 'zustand';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 // --- MERGED FROM types.ts ---
 type ViewType = 'pei-form-view' | 'activity-bank-view' | 'pei-list-view' | 'files-view' | 'privacy-policy-view' | 'activity-detail-view';
@@ -122,37 +121,50 @@ const labelToIdMap = fieldOrderForPreview.flatMap(s => s.fields).reduce((acc, fi
 }, {});
 
 
-// --- MERGED FROM services/geminiService.ts ---
-// FIX: Use process.env.API_KEY as per the guidelines instead of a hardcoded key.
-const geminiAi = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+// --- Service for ApiFreeLLM ---
 const callGenerativeAI = async (prompt: string): Promise<string> => {
+    // The ApiFreeLLM doesn't support system instructions directly in the chat endpoint.
+    // We prepend the instruction to the user's prompt.
+    const fullPrompt = `Você é um assistente especializado em educação, focado na criação de Planos Educacionais Individualizados (PEI). Suas respostas devem ser profissionais, bem estruturadas e direcionadas para auxiliar educadores.\n\n---\n\n${prompt}`;
+
     try {
-        const response: GenerateContentResponse = await geminiAi.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                systemInstruction: "Você é um assistente especializado em educação, focado na criação de Planos Educacionais Individualizados (PEI). Suas respostas devem ser profissionais, bem estruturadas e direcionadas para auxiliar educadores.",
-            }
+        const response = await fetch("https://apifreellm.com/api/chat", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "message": fullPrompt
+            })
         });
 
-        const text = response.text;
-        if (!text) {
-            throw new Error("A resposta da IA veio vazia.");
+        if (!response.ok) {
+            throw new Error(`A API retornou um erro HTTP: ${response.status} ${response.statusText}`);
         }
-        return text.trim();
+
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            if (!data.response) {
+                throw new Error("A resposta da IA veio vazia.");
+            }
+            return data.response.trim();
+        } else if (data.status === 'rate_limited') {
+            throw new Error(`Limite de taxa excedido. Por favor, aguarde ${data.retry_after} segundos antes de tentar novamente.`);
+        } else {
+            // Handles 'error' status and any other unexpected statuses
+            throw new Error(`A API retornou um erro: ${data.error || 'Erro desconhecido.'} (Status: ${data.status})`);
+        }
 
     } catch (error) {
         console.error("AI Service Error:", error);
         if (error instanceof Error) {
-             if (error.message.includes('API key not valid')) {
-                 throw new Error("A chave da API não é válida. Verifique a configuração do ambiente.");
-             }
              throw new Error(`Falha na comunicação com a IA. Detalhes: ${error.message}`);
         }
         throw new Error("Ocorreu uma falha desconhecida na comunicação com a IA.");
     }
 };
+
 
 // --- MERGED FROM services/storageService.ts ---
 const PEI_STORAGE_KEY = 'peiRecords';
