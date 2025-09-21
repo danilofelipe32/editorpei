@@ -12,7 +12,7 @@ import { create } from 'zustand';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 // --- MERGED FROM types.ts ---
-type ViewType = 'pei-form-view' | 'activity-bank-view' | 'pei-list-view' | 'files-view' | 'privacy-policy-view';
+type ViewType = 'pei-form-view' | 'activity-bank-view' | 'pei-list-view' | 'files-view' | 'privacy-policy-view' | 'activity-detail-view';
 
 interface PeiFormField {
     id: string;
@@ -281,9 +281,11 @@ const addActivityToPei = (peiId, activity) => {
 interface AppState {
   currentView: ViewType;
   editingPeiId: string | null;
+  viewingActivityId: string | null;
   navigateToView: (view: ViewType) => void;
   navigateToEditPei: (peiId: string) => void;
   navigateToNewPei: () => void;
+  navigateToActivityDetail: (activityId: string) => void;
 }
 
 const getInitialView = (): ViewType => {
@@ -301,9 +303,11 @@ const getInitialView = (): ViewType => {
 const useAppStore = create<AppState>((set) => ({
   currentView: getInitialView(),
   editingPeiId: null,
+  viewingActivityId: null,
   navigateToView: (view) => set({ 
       currentView: view, 
-      editingPeiId: view === 'pei-form-view' ? null : undefined 
+      editingPeiId: view === 'pei-form-view' ? null : undefined,
+      viewingActivityId: null
   }),
   navigateToEditPei: (peiId) => set({ 
       currentView: 'pei-form-view', 
@@ -313,6 +317,10 @@ const useAppStore = create<AppState>((set) => ({
       currentView: 'pei-form-view', 
       editingPeiId: null 
   }),
+  navigateToActivityDetail: (activityId) => set({
+      currentView: 'activity-detail-view',
+      viewingActivityId: activityId
+  })
 }));
 
 
@@ -443,22 +451,30 @@ const Tag = ({ children, colorClass }) => (
     </span>
 );
 
-const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit }) => {
+const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit, onViewDetails }) => {
     const cardBaseStyle = "bg-white p-5 rounded-xl shadow-md border transition-shadow hover:shadow-lg";
     const duaStyle = "bg-blue-50 border-blue-200 hover:shadow-blue-100";
     const normalStyle = "border-gray-200";
 
+    const handleActionClick = (e, action) => {
+        e.stopPropagation(); // Prevent card click from firing
+        action();
+    };
+
     return (
-        <div className={`${cardBaseStyle} ${activity.isDUA ? duaStyle : normalStyle}`}>
+        <div
+            className={`${cardBaseStyle} ${activity.isDUA ? duaStyle : normalStyle} cursor-pointer`}
+            onClick={onViewDetails}
+        >
             <div className="flex justify-between items-start mb-3">
                 <h3 className="text-lg font-bold text-gray-800 pr-4 flex-1">{activity.title}</h3>
                 <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                         type="button"
-                        onClick={() => onToggleFavorite(activity.id)}
+                        onClick={(e) => handleActionClick(e, () => onToggleFavorite(activity.id))}
                         className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors
-                            ${activity.isFavorited 
-                                ? 'text-amber-500 bg-amber-100 hover:bg-amber-200' 
+                            ${activity.isFavorited
+                                ? 'text-amber-500 bg-amber-100 hover:bg-amber-200'
                                 : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                             }`}
                         title={activity.isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
@@ -467,7 +483,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
                     </button>
                     <button
                         type="button"
-                        onClick={() => onEdit(activity)}
+                        onClick={(e) => handleActionClick(e, () => onEdit(activity))}
                         className="w-9 h-9 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-blue-600 rounded-full transition-colors"
                         title="Editar atividade"
                     >
@@ -475,7 +491,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
                     </button>
                      <button
                         type="button"
-                        onClick={() => onAddToPei(activity)}
+                        onClick={(e) => handleActionClick(e, () => onAddToPei(activity))}
                         className="w-9 h-9 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-indigo-600 rounded-full transition-colors"
                         title="Adicionar ao PEI atual"
                     >
@@ -483,7 +499,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
                     </button>
                     <button
                         type="button"
-                        onClick={() => onDelete(activity.id)}
+                        onClick={(e) => handleActionClick(e, () => onDelete(activity.id))}
                         className="w-9 h-9 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-red-600 rounded-full transition-colors"
                         title="Excluir atividade"
                     >
@@ -1415,6 +1431,87 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
 };
 
 
+// --- NEW COMPONENT: ActivityDetailView ---
+const ActivityDetailView = () => {
+    const { viewingActivityId, navigateToView } = useAppStore();
+    const [activity, setActivity] = useState<Activity | null>(null);
+
+    useEffect(() => {
+        if (viewingActivityId) {
+            const allActivities = getAllActivities();
+            const foundActivity = allActivities.find(act => act.id === viewingActivityId);
+            setActivity(foundActivity || null);
+        }
+    }, [viewingActivityId]);
+
+    if (!activity) {
+        return (
+            <div className="text-center py-16">
+                <h2 className="text-2xl font-bold text-gray-700">Atividade não encontrada</h2>
+                <p className="text-gray-500 mt-2">A atividade que você está procurando não existe ou foi removida.</p>
+                <button
+                    type="button"
+                    onClick={() => navigateToView('activity-bank-view')}
+                    className="mt-6 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                    Voltar ao Banco de Atividades
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md border border-gray-200">
+            <div className="flex justify-between items-start mb-6">
+                <h2 className="text-3xl font-bold text-gray-800 flex-1 pr-4">{activity.title}</h2>
+                <button
+                    type="button"
+                    onClick={() => navigateToView('activity-bank-view')}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 flex-shrink-0"
+                >
+                    <i className="fa-solid fa-arrow-left"></i>
+                    Voltar
+                </button>
+            </div>
+
+            <div className="prose max-w-none text-gray-600 leading-relaxed">
+                <p>{activity.description}</p>
+            </div>
+
+            <div className="mt-8 border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Detalhes da Atividade</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                    <div>
+                        <strong className="block text-gray-500">Disciplina</strong>
+                        <p className="text-gray-800">{activity.discipline}</p>
+                    </div>
+                     <div>
+                        <strong className="block text-gray-500">Favorito</strong>
+                        <p className="text-gray-800">{activity.isFavorited ? 'Sim' : 'Não'}</p>
+                    </div>
+                    <div>
+                        <strong className="block text-gray-500">Habilidades Trabalhadas</strong>
+                        {activity.skills?.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {activity.skills.map(skill => <Tag key={skill} colorClass="bg-green-100 text-green-800">{skill}</Tag>)}
+                            </div>
+                        ) : <p className="text-gray-500 italic">Nenhuma especificada</p>}
+                    </div>
+                    <div>
+                        <strong className="block text-gray-500">Necessidades Específicas</strong>
+                        {activity.needs?.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {activity.needs.map(need => <Tag key={need} colorClass="bg-sky-100 text-sky-800">{need}</Tag>)}
+                            </div>
+                        ) : <p className="text-gray-500 italic">Nenhuma especificada</p>}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // --- MERGED FROM components/ActivityBankView.tsx ---
 const ActivityBankView = () => {
     const [activities, setActivities] = useState([]);
@@ -1426,7 +1523,7 @@ const ActivityBankView = () => {
     const [refinementInstruction, setRefinementInstruction] = useState('');
     const [isRegenerating, setIsRegenerating] = useState(false);
     
-    const { editingPeiId, navigateToEditPei } = useAppStore();
+    const { editingPeiId, navigateToEditPei, navigateToActivityDetail } = useAppStore();
 
     useEffect(() => {
         setActivities(getAllActivities());
@@ -1559,6 +1656,10 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
         }
     };
 
+    const handleViewActivity = (activityId) => {
+        navigateToActivityDetail(activityId);
+    };
+
     return (
         <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">Banco de Atividades e Recursos</h2>
@@ -1624,6 +1725,7 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
                             onToggleFavorite={handleToggleFavorite}
                             onAddToPei={handleAddToPei}
                             onEdit={handleOpenEditModal}
+                            onViewDetails={() => handleViewActivity(activity.id)}
                         />
                     ))
                 ) : (
@@ -2109,9 +2211,8 @@ const App = () => {
                             onSaveSuccess={() => navigateToView('pei-list-view')} 
                         />
                     )}
-                    {currentView === 'activity-bank-view' && (
-                        <ActivityBankView />
-                    )}
+                    {currentView === 'activity-bank-view' && <ActivityBankView />}
+                    {currentView === 'activity-detail-view' && <ActivityDetailView />}
                     {currentView === 'pei-list-view' && <PeiListView />}
                     {currentView === 'files-view' && <SupportFilesView />}
                     {currentView === 'privacy-policy-view' && <PrivacyPolicyView />}
