@@ -1597,16 +1597,16 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                         </div>
                     </div>
                 ))}
-                <div className="bg-white p-6 rounded-xl shadow-md mt-6 border border-gray-200 flex justify-end items-center flex-wrap gap-4">
-                    <div className="text-sm text-gray-500 italic mr-auto pl-2 transition-opacity duration-500">
+                <div className="bg-white p-6 rounded-xl shadow-md mt-6 border border-gray-200 grid grid-cols-2 gap-3 md:flex md:justify-end md:items-center md:flex-wrap md:gap-4">
+                    <div className="col-span-2 text-center md:text-left md:mr-auto md:col-auto text-sm text-gray-500 italic pl-2 transition-opacity duration-500">
                         {autoSaveStatus === 'salvando' && (
-                            <span className="flex items-center gap-2">
+                            <span className="flex items-center justify-center md:justify-start gap-2">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
                                 Salvando...
                             </span>
                         )}
                         {autoSaveStatus === 'salvo' && (
-                            <span className="flex items-center gap-2 text-green-600 font-medium">
+                            <span className="flex items-center justify-center md:justify-start gap-2 text-green-600 font-medium">
                                 <i className="fa-solid fa-check"></i>
                                 Salvo automaticamente
                             </span>
@@ -1617,7 +1617,7 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                         type="button"
                         onClick={handleIntelligentAnalysis}
                         disabled={isAnalyzingPei || !areRequiredFieldsFilled}
-                        className="px-6 py-2.5 text-sm font-medium text-gray-800 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        className="col-span-2 px-6 py-2.5 text-sm font-medium text-gray-800 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                         title={!areRequiredFieldsFilled ? "Preencha os campos obrigatórios para habilitar" : "Executar análise completa do PEI"}
                     >
                         {isAnalyzingPei ? (
@@ -1637,7 +1637,7 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                         type="button" 
                         onClick={handleGenerateFullPei} 
                         disabled={isGeneratingFullPei || !areRequiredFieldsFilled}
-                        className="px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        className="col-span-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                         title={!areRequiredFieldsFilled ? "Preencha os campos obrigatórios para habilitar" : "Gerar PEI completo com IA"}
                     >
                         {isGeneratingFullPei ? (
@@ -1655,15 +1655,15 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                      <button
                         type="button"
                         onClick={() => setIsPreviewModalOpen(true)}
-                        className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                        className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
                     >
                         <i className="fa-solid fa-eye"></i>
                         Pré-visualizar PEI
                     </button>
-                    <button type="button" onClick={handleClearForm} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors">
+                    <button type="button" onClick={handleClearForm} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors flex justify-center">
                         Limpar Formulário
                     </button>
-                    <button type="submit" className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    <button type="submit" className="col-span-2 px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex justify-center">
                         Salvar PEI
                     </button>
                 </div>
