@@ -2613,6 +2613,7 @@ const App = () => {
 
 const Sidebar = ({ isSidebarOpen, onNavigate }) => {
     const currentView = useAppStore((state) => state.currentView);
+    const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     
     const navItems = [
         { id: 'pei-form-view', icon: <EditorIcon />, label: 'Editor PEI' },
@@ -2631,9 +2632,19 @@ const Sidebar = ({ isSidebarOpen, onNavigate }) => {
             transform md:transform-none transition-transform duration-300 ease-in-out
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             flex flex-col p-6`}>
-            <div className="flex items-center gap-3 mb-2">
-                <div className="text-3xl text-indigo-600"><BrainIcon /></div>
-                <h1 className="text-xl font-bold text-gray-800">Assistente PEI</h1>
+            <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-3">
+                    <div className="text-3xl text-indigo-600"><BrainIcon /></div>
+                    <h1 className="text-xl font-bold text-gray-800">Assistente PEI</h1>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => setIsInfoModalOpen(true)}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors"
+                    title="Sobre a Aplicação"
+                >
+                    <i className="fa-solid fa-circle-info text-xl"></i>
+                </button>
             </div>
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
                 O seu assistente para criar Planos Educacionais Individualizados (PEI).
@@ -2679,6 +2690,55 @@ const Sidebar = ({ isSidebarOpen, onNavigate }) => {
                     <a href="mailto:danilofelipe862@educar.rn.gov.br" className="hover:text-indigo-600">Produzido por Danilo Arruda</a>
                 </footer>
             </div>
+            <Modal
+                id="info-modal"
+                title="Sobre o Assistente PEI com IA"
+                isOpen={isInfoModalOpen}
+                onClose={() => setIsInfoModalOpen(false)}
+                footer={
+                    <button
+                        type="button"
+                        onClick={() => setIsInfoModalOpen(false)}
+                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                    >
+                        Fechar
+                    </button>
+                }
+                wide
+            >
+                <div className="space-y-4 text-gray-600">
+                    <div className="text-center">
+                        <div className="text-5xl text-indigo-600 inline-block mb-3"><BrainIcon /></div>
+                        <p className="font-semibold text-gray-800">Assistente PEI com IA</p>
+                    </div>
+                    <p className="text-center italic">
+                        Uma aplicação web PWA para auxiliar educadores e profissionais da educação na elaboração de Planos Educacionais Individualizados (PEI), utilizando IA para gerar conteúdo, analisar metas e sugerir atividades.
+                    </p>
+
+                    <h4 className="font-bold text-gray-800 pt-3 border-t mt-4">Principais Funcionalidades:</h4>
+                    <ul className="list-disc list-inside space-y-2 text-sm">
+                        <li><strong>Editor de PEI Inteligente:</strong> Preenchimento de campos assistido por IA, garantindo textos coesos e profissionais.</li>
+                        <li><strong>Análise de Metas SMART:</strong> A IA avalia suas metas e oferece sugestões para torná-las Específicas, Mensuráveis, Atingíveis, Relevantes e Temporais.</li>
+                        <li><strong>Banco de Atividades:</strong> Crie, edite e organize um repositório de atividades pedagógicas que podem ser facilmente adicionadas aos seus PEIs.</li>
+                        <li><strong>Ficheiros de Apoio (RAG):</strong> Forneça contexto adicional à IA anexando seus próprios documentos de texto, melhorando a personalização das respostas.</li>
+                        <li><strong>Privacidade em Primeiro Lugar:</strong> Todos os seus dados (PEIs, atividades, ficheiros) são salvos exclusivamente no seu navegador. Nenhuma informação é armazenada em servidores externos.</li>
+                        <li><strong>Funcionalidade Offline (PWA):</strong> Instale a aplicação no seu dispositivo e acesse seus PEIs mesmo sem uma conexão com a internet.</li>
+                    </ul>
+
+                    <h4 className="font-bold text-gray-800 pt-3 border-t mt-4">Tecnologias Utilizadas:</h4>
+                    <p className="text-sm">
+                        Esta aplicação foi construída com React, Zustand, TailwindCSS e é potencializada pela API do Google Gemini.
+                    </p>
+
+                    <div className="text-center pt-4 border-t mt-4">
+                        <p className="text-xs text-gray-500">
+                            Produzido por Danilo Arruda
+                            <br />
+                            <a href="mailto:danilofelipe862@educar.rn.gov.br" className="text-indigo-600 hover:underline">danilofelipe862@educar.rn.gov.br</a>
+                        </p>
+                    </div>
+                </div>
+            </Modal>
         </aside>
     );
 };
