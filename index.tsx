@@ -159,7 +159,7 @@ const PEI_STORAGE_KEY = 'peiRecords';
 const RAG_FILES_KEY = 'ragFiles';
 const ACTIVITY_BANK_KEY = 'activityBank';
 
-const getAllPeis = () => {
+const getAllPeis = (): PeiRecord[] => {
     try {
         const recordsJson = localStorage.getItem(PEI_STORAGE_KEY);
         if (recordsJson) {
@@ -172,18 +172,18 @@ const getAllPeis = () => {
     return [];
 };
 
-const getPeiById = (id) => {
+const getPeiById = (id: string): PeiRecord | undefined => {
     const allPeis = getAllPeis();
     return allPeis.find(pei => pei.id === id);
 };
 
-const savePei = (recordData, id, studentName) => {
+const savePei = (recordData: NewPeiRecordData, id: string | null, studentName: string): PeiRecord => {
     const allPeis = getAllPeis();
 
     if (id) {
         const peiIndex = allPeis.findIndex(p => p.id === id);
         if (peiIndex > -1) {
-            const updatedPei = {
+            const updatedPei: PeiRecord = {
                 ...allPeis[peiIndex],
                 ...recordData,
                 alunoNome: studentName,
@@ -195,7 +195,7 @@ const savePei = (recordData, id, studentName) => {
         }
     }
 
-    const newPei = {
+    const newPei: PeiRecord = {
         ...recordData,
         id: crypto.randomUUID(),
         alunoNome: studentName,
@@ -206,13 +206,13 @@ const savePei = (recordData, id, studentName) => {
     return newPei;
 };
 
-const deletePei = (id) => {
+const deletePei = (id: string) => {
     const allPeis = getAllPeis();
     const updatedList = allPeis.filter(p => p.id !== id);
     localStorage.setItem(PEI_STORAGE_KEY, JSON.stringify(updatedList));
 };
 
-const getAllRagFiles = () => {
+const getAllRagFiles = (): RagFile[] => {
     try {
         const filesJson = localStorage.getItem(RAG_FILES_KEY);
         return filesJson ? JSON.parse(filesJson) : [];
@@ -222,7 +222,7 @@ const getAllRagFiles = () => {
     }
 };
 
-const saveRagFiles = (files) => {
+const saveRagFiles = (files: RagFile[]) => {
     try {
         const filesJson = JSON.stringify(files);
         localStorage.setItem(RAG_FILES_KEY, filesJson);
@@ -231,7 +231,7 @@ const saveRagFiles = (files) => {
     }
 };
 
-const getAllActivities = () => {
+const getAllActivities = (): Activity[] => {
     try {
         const activitiesJson = localStorage.getItem(ACTIVITY_BANK_KEY);
         return activitiesJson ? JSON.parse(activitiesJson) : [];
@@ -241,7 +241,7 @@ const getAllActivities = () => {
     }
 };
 
-const saveActivities = (activities) => {
+const saveActivities = (activities: Activity[]) => {
     try {
         localStorage.setItem(ACTIVITY_BANK_KEY, JSON.stringify(activities));
     } catch (error) {
@@ -249,9 +249,9 @@ const saveActivities = (activities) => {
     }
 };
 
-const addActivitiesToBank = (generatedActivities, sourcePeiId) => {
+const addActivitiesToBank = (generatedActivities: Omit<Activity, 'id'>[], sourcePeiId: string | null) => {
     const existingActivities = getAllActivities();
-    const newActivities = generatedActivities.map(act => ({
+    const newActivities: Activity[] = generatedActivities.map(act => ({
         ...act,
         id: crypto.randomUUID(),
         isFavorited: false,
@@ -263,7 +263,7 @@ const addActivitiesToBank = (generatedActivities, sourcePeiId) => {
     saveActivities(updatedActivities);
 };
 
-const addActivityToPei = (peiId, activity) => {
+const addActivityToPei = (peiId: string, activity: Activity): PeiRecord | undefined => {
     const pei = getPeiById(peiId);
     if (pei) {
         const currentActivitiesText = pei.data['atividades-content'] || '';
@@ -272,7 +272,8 @@ const addActivityToPei = (peiId, activity) => {
         pei.data['atividades-content'] = (currentActivitiesText + newActivityText).trim();
         
         const { id, timestamp, alunoNome, ...recordData } = pei;
-        return savePei(recordData, id, alunoNome);
+        // The type assertion is needed because 'id', 'timestamp', 'alunoNome' are removed
+        return savePei(recordData as NewPeiRecordData, id, alunoNome);
     }
     return undefined;
 };
@@ -526,11 +527,73 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
 };
 
 
+// --- PDF Generation Utility ---
+const generateAndPrintPdf = (peiRecord: PeiRecord | { alunoNome: string, data: PeiData }) => {
+    if (!peiRecord || !peiRecord.data) {
+        alert('Dados do PEI não encontrados para gerar o PDF.');
+        return;
+    }
+
+    const studentName = peiRecord.alunoNome || 'PEI';
+
+    const htmlContent = fieldOrderForPreview.map(section => {
+        const fieldsHtml = section.fields.map(field => {
+            const value = peiRecord.data[field.id] || '';
+            const sanitizedValue = value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const displayValue = sanitizedValue.trim() ? sanitizedValue.replace(/\n/g, '<br />') : '<span class="italic">Não preenchido</span>';
+            
+            return `
+                <div style="margin-bottom: 1rem;">
+                    <h3 style="font-weight: 600; margin-bottom: 0.25rem;">${field.label}</h3>
+                    <div style="white-space: pre-wrap; word-wrap: break-word; background-color: #f9fafb; padding: 0.75rem; border-radius: 6px; border: 1px solid #e5e7eb;">
+                        ${displayValue}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div style="margin-bottom: 1.5rem; page-break-inside: avoid;">
+                <h2 style="font-size: 1.5rem; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 1rem;">${section.title}</h2>
+                <div style="display: grid; gap: 1rem;">${fieldsHtml}</div>
+            </div>
+        `;
+    }).join('');
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>PEI - ${studentName}</title>
+                    <style>
+                        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px; }
+                        h1, h2, h3 { color: #111; }
+                        h1 { font-size: 2em; text-align: center; margin-bottom: 0.5em; }
+                        h2 { font-size: 1.5em; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 0.5em; margin-top: 1.5em; margin-bottom: 1em; }
+                        h3 { font-size: 1.1em; font-weight: 600; margin-bottom: 0.25em; }
+                        .italic { font-style: italic; color: #888; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Plano Educacional Individualizado (PEI)</h1>
+                    <h2 style="text-align: center; margin-bottom: 2rem;">Aluno(a): ${studentName}</h2>
+                    ${htmlContent}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => { printWindow.print(); }, 250);
+    }
+};
+
+
 // --- MERGED FROM components/PeiFormView.tsx ---
 const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
-    const [currentPeiId, setCurrentPeiId] = useState(editingPeiId);
+    const [currentPeiId, setCurrentPeiId] = useState<string | null>(editingPeiId);
     const [peiData, setPeiData] = useState<PeiData>({});
-    const [loadingStates, setLoadingStates] = useState({});
+    const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState({ title: '', content: null, footer: null });
     
@@ -538,17 +601,17 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [isFullPeiModalOpen, setIsFullPeiModalOpen] = useState(false);
     const [fullPeiContent, setFullPeiContent] = useState('');
 
-    const [aiGeneratedFields, setAiGeneratedFields] = useState(new Set());
+    const [aiGeneratedFields, setAiGeneratedFields] = useState(new Set<string>());
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editModalData, setEditModalData] = useState(null);
+    const [editModalData, setEditModalData] = useState<{fieldId: string, label: string, text: string} | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [refinementInstruction, setRefinementInstruction] = useState('');
     const [isRefinementInputVisible, setIsRefinementInputVisible] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [smartAnalysisResults, setSmartAnalysisResults] = useState<Record<string, any>>({});
     const [goalActivities, setGoalActivities] = useState<Record<string, Activity[]>>({});
-    const [openSmartAnalysis, setOpenSmartAnalysis] = useState({});
-    const [errors, setErrors] = useState({});
+    const [openSmartAnalysis, setOpenSmartAnalysis] = useState<Record<string, boolean>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [autoSaveStatus, setAutoSaveStatus] = useState('ocioso'); // 'ocioso', 'salvando', 'salvo'
 
     const helpTexts = {
@@ -598,7 +661,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
 
             if (studentName) {
                 setAutoSaveStatus('salvando');
-                const recordData = {
+                const recordData: NewPeiRecordData = {
                     data: currentPeiData,
                     aiGeneratedFields: Array.from(currentAiFields),
                     smartAnalysisResults: currentSmartResults,
@@ -660,7 +723,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
         return isValid;
     };
 
-    const handleInputChange = useCallback((e) => {
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { id, value } = e.target;
         setPeiData(prev => ({ ...prev, [id]: value }));
         if (errors[id]) {
@@ -672,7 +735,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
         }
     }, [errors]);
 
-    const handleTextAreaChange = useCallback((id, value) => {
+    const handleTextAreaChange = useCallback((id: string, value: string) => {
         setPeiData(prev => ({ ...prev, [id]: value }));
         setAiGeneratedFields(prev => {
             const newSet = new Set(prev);
@@ -712,7 +775,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
         return { ragContext, formContext };
     };
 
-    const handleActionClick = async (fieldId, action) => {
+    const handleActionClick = async (fieldId: string, action: 'ai' | 'smart' | 'suggest') => {
         if (action === 'ai' && !areRequiredFieldsFilled) {
             validateForm();
             return;
@@ -750,6 +813,7 @@ Sua resposta deve ser apenas o texto para este campo, sem introduções ou títu
                     const goalText = peiData[fieldId] || '';
                     if (!goalText) {
                         alert('Por favor, preencha o campo da meta antes de solicitar a análise SMART.');
+                        setLoadingStates(prev => ({ ...prev, [`${fieldId}-${action}`]: false }));
                         return;
                     }
                     const smartPrompt = `Analise a seguinte meta de um PEI com base nos critérios SMART (Específica, Mensurável, Atingível, Relevante, Temporal). Forneça uma crítica construtiva e uma sugestão de melhoria para cada critério.
@@ -792,6 +856,7 @@ Sua resposta DEVE ser um objeto JSON válido, sem nenhum texto adicional antes o
                         const goalTextForSuggest = peiData[fieldId] || '';
                         if (!goalTextForSuggest.trim()) {
                             alert('Por favor, preencha o campo da meta antes de solicitar sugestões de atividades.');
+                            setLoadingStates(prev => ({ ...prev, [`${fieldId}-${action}`]: false }));
                             return;
                         }
                         promptContext = `Informações do Aluno: ${studentInfoForSimpleActions}`;
@@ -799,6 +864,7 @@ Sua resposta DEVE ser um objeto JSON válido, sem nenhum texto adicional antes o
                     } else {
                         if (!areRequiredFieldsFilled) {
                             validateForm();
+                            setLoadingStates(prev => ({ ...prev, [`${fieldId}-${action}`]: false }));
                             return;
                         }
                         promptContext = `${ragContext}\n${formContext}`;
@@ -981,13 +1047,13 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         setCurrentPeiId(null);
     }, []);
 
-    const handleSavePei = (e) => {
+    const handleSavePei = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!validateForm()) {
             return;
         }
 
-        const recordData = {
+        const recordData: NewPeiRecordData = {
             data: peiData,
             aiGeneratedFields: Array.from(aiGeneratedFields),
             smartAnalysisResults: smartAnalysisResults,
@@ -1003,48 +1069,11 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
     };
 
     const handleDownloadPdf = () => {
-        const previewContent = document.getElementById('pei-preview-content');
-        if (!previewContent) return;
-
-        const studentName = peiData['aluno-nome'] || 'PEI';
-        const printContent = previewContent.innerHTML;
-
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>PEI - ${studentName}</title>
-                        <style>
-                            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px; }
-                            h1, h2, h3 { color: #111; }
-                            h1 { font-size: 2em; text-align: center; margin-bottom: 0.5em; }
-                            h2 { font-size: 1.5em; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 0.5em; margin-top: 1.5em; margin-bottom: 1em; }
-                            h3 { font-size: 1.1em; font-weight: 600; margin-bottom: 0.25em; }
-                            div > div { margin-bottom: 1.5rem; }
-                            div > div > div {
-                                white-space: pre-wrap;
-                                word-wrap: break-word;
-                                background-color: #f9f9f9;
-                                padding: 0.75em;
-                                border-radius: 6px;
-                                border: 1px solid #eee;
-                                color: #555;
-                            }
-                            .italic { font-style: italic; color: #888; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Plano Educacional Individualizado (PEI)</h1>
-                        <h2>Aluno(a): ${studentName}</h2>
-                        ${printContent}
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-        }
+        const currentPeiForPdf = {
+            alunoNome: peiData['aluno-nome'] || 'PEI',
+            data: peiData,
+        };
+        generateAndPrintPdf(currentPeiForPdf);
     };
 
     const renderSmartAnalysis = (analysis: Record<string, {critique: string; suggestion: string}>) => {
@@ -1110,7 +1139,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         setIsModalOpen(true);
     };
 
-    const renderField = (field) => {
+    const renderField = (field: PeiFormField) => {
         const { id, label } = field;
         const hasError = !!errors[id];
         const textAreaFields = [
@@ -1973,6 +2002,15 @@ const PeiListView = () => {
     }
   };
 
+  const handleSharePdf = (id: string) => {
+    const peiToShare = getPeiById(id);
+    if (peiToShare) {
+        generateAndPrintPdf(peiToShare);
+    } else {
+        alert('Não foi possível encontrar o PEI para compartilhar.');
+    }
+  };
+
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('pt-BR', {
         day: '2-digit',
@@ -2010,6 +2048,15 @@ const PeiListView = () => {
                         <p className="text-sm text-gray-500">Última modificação: {formatDate(pei.timestamp)}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => handleSharePdf(pei.id)}
+                            className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors flex items-center gap-2"
+                            title="Compartilhar PEI como PDF"
+                        >
+                            <i className="fa-solid fa-share-nodes"></i>
+                            <span className="hidden sm:inline">Compartilhar</span>
+                        </button>
                         <button
                             type="button"
                             onClick={() => navigateToEditPei(pei.id)}
