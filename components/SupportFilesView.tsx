@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllRagFiles, saveRagFiles } from '../services/storageService';
+import { getAllRagFiles, saveRagFiles } from '../services/storageService.ts';
 
 export const SupportFilesView = () => {
     const [files, setFiles] = useState([]);

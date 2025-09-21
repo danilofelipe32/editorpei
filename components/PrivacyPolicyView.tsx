@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../store';
+import { useAppStore } from '../store.ts';
 
 export const PrivacyPolicyView = () => {
   const [isChecked, setIsChecked] = useState(false);

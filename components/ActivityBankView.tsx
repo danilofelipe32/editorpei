@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getAllActivities, saveActivities, addActivityToPei } from '../services/storageService';
-import { useAppStore } from '../store';
-import { ActivityCard } from './ActivityCard';
-import { Modal } from './Modal';
-import { disciplineOptions } from '../constants';
+import { getAllActivities, saveActivities, addActivityToPei } from '../services/storageService.ts';
+import { useAppStore } from '../store.ts';
+import { ActivityCard } from './ActivityCard.tsx';
+import { Modal } from './Modal.tsx';
+import { disciplineOptions } from '../constants.tsx';
 
 export const ActivityBankView = () => {
     const [activities, setActivities] = useState([]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getAllPeis, deletePei } from '../services/storageService';
-import { useAppStore } from '../store';
+import { getAllPeis, deletePei } from '../services/storageService.ts';
+import { useAppStore } from '../store.ts';
 
 export const PeiListView = () => {
   const [peis, setPeis] = useState([]);

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ViewType } from './types';
+import type { ViewType } from './types.ts';
 
 // Interface defining the shape of our global state
 interface AppState {

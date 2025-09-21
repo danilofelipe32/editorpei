@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { fieldOrderForPreview, disciplineOptions } from '../constants';
-import { TextAreaWithActions } from './TextAreaWithActions';
-import { callGenerativeAI } from '../services/geminiService';
-import { savePei, getPeiById, getAllRagFiles, addActivitiesToBank } from '../services/storageService';
-import { Modal } from './Modal';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { fieldOrderForPreview, disciplineOptions } from '../constants.tsx';
+import { TextAreaWithActions } from './TextAreaWithActions.tsx';
+import { callGenerativeAI } from '../services/geminiService.ts';
+import { savePei, getPeiById, getAllRagFiles, addActivitiesToBank } from '../services/storageService.ts';
+import { Modal } from './Modal.tsx';
 
 const helpTexts = {
     'id-diagnostico': 'Descreva o diagnóstico do aluno (se houver) e as necessidades educacionais específicas decorrentes dele. Ex: TDAH, Dislexia, TEA.',
@@ -52,6 +52,49 @@ export const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [smartAnalysisResults, setSmartAnalysisResults] = useState({});
     const [openSmartAnalysis, setOpenSmartAnalysis] = useState({});
     const [errors, setErrors] = useState({});
+    const [autoSaveStatus, setAutoSaveStatus] = useState('ocioso'); // 'ocioso', 'salvando', 'salvo'
+
+    // Auto-save logic
+    const autoSaveDataRef = useRef({ peiData, aiGeneratedFields, smartAnalysisResults, currentPeiId });
+
+    useEffect(() => {
+        autoSaveDataRef.current = { peiData, aiGeneratedFields, smartAnalysisResults, currentPeiId };
+    }, [peiData, aiGeneratedFields, smartAnalysisResults, currentPeiId]);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            const {
+                peiData: currentPeiData,
+                aiGeneratedFields: currentAiFields,
+                smartAnalysisResults: currentSmartResults,
+                currentPeiId: currentId,
+            } = autoSaveDataRef.current;
+            
+            const studentName = currentPeiData['aluno-nome']?.trim();
+
+            if (studentName) {
+                setAutoSaveStatus('salvando');
+                const recordData = {
+                    data: currentPeiData,
+                    aiGeneratedFields: Array.from(currentAiFields),
+                    smartAnalysisResults: currentSmartResults,
+                };
+                
+                const savedRecord = savePei(recordData, currentId, studentName);
+                
+                if (!currentId && savedRecord.id) {
+                    setCurrentPeiId(savedRecord.id);
+                }
+
+                setTimeout(() => {
+                    setAutoSaveStatus('salvo');
+                    setTimeout(() => setAutoSaveStatus('ocioso'), 2000);
+                }, 500);
+            }
+        }, 5000); // 5 seconds
+
+        return () => clearInterval(intervalId);
+    }, []); // Run only once on mount
 
     useEffect(() => {
         if (editingPeiId) {
@@ -720,6 +763,20 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                     </div>
                 ))}
                 <div className="flex justify-end items-center flex-wrap gap-4 mt-6">
+                    <div className="text-sm text-gray-500 italic mr-auto pl-2 transition-opacity duration-500">
+                        {autoSaveStatus === 'salvando' && (
+                            <span className="flex items-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                                Salvando...
+                            </span>
+                        )}
+                        {autoSaveStatus === 'salvo' && (
+                            <span className="flex items-center gap-2 text-green-600 font-medium">
+                                <i className="fa-solid fa-check"></i>
+                                Salvo automaticamente
+                            </span>
+                        )}
+                    </div>
                     <button 
                         type="button" 
                         onClick={handleGenerateFullPei} 

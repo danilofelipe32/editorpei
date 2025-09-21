@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { BrainIcon, EditorIcon, ActivityIcon, ArchiveIcon, PaperclipIcon, ShieldIcon } from './constants';
-import { useAppStore } from './store';
+import { BrainIcon, EditorIcon, ActivityIcon, ArchiveIcon, PaperclipIcon, ShieldIcon } from './constants.tsx';
+import { useAppStore } from './store.ts';
 
 // Views
-import { PeiFormView } from './components/PeiFormView';
-import { ActivityBankView } from './components/ActivityBankView';
-import { PeiListView } from './components/PeiListView';
-import { SupportFilesView } from './components/SupportFilesView';
-import { PrivacyPolicyView } from './components/PrivacyPolicyView';
+import { PeiFormView } from './components/PeiFormView.tsx';
+import { ActivityBankView } from './components/ActivityBankView.tsx';
+import { PeiListView } from './components/PeiListView.tsx';
+import { SupportFilesView } from './components/SupportFilesView.tsx';
+import { PrivacyPolicyView } from './components/PrivacyPolicyView.tsx';
 
 
 const App = () => {
