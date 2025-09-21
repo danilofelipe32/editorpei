@@ -35,8 +35,7 @@ interface PeiRecord {
     timestamp: string;
     aiGeneratedFields?: string[];
     smartAnalysisResults?: Record<string, any | null>;
-    suggestedGoalActivities?: Record<string, { text: string; activities: Activity[] }>;
-    suggestedGoalActivitiesState?: Record<string, boolean>;
+    goalActivities?: Record<string, Activity[]>;
 }
 
 type NewPeiRecordData = Omit<PeiRecord, 'id' | 'timestamp' | 'alunoNome'>;
@@ -52,8 +51,10 @@ interface Activity {
     title: string;
     description: string;
     discipline: string;
-    skills: string[];
-    needs: string[];
+    // FIX: Allow skills to be string or string[] to handle form input correctly, resolving a 'never' type error.
+    skills: string[] | string;
+    // FIX: Allow needs to be string or string[] to handle form input correctly, resolving a 'never' type error.
+    needs: string[] | string;
     goalTags: string[];
     isFavorited: boolean;
     rating: 'like' | 'dislike' | null;
@@ -513,10 +514,10 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
             <div className="flex flex-wrap gap-2">
                 {activity.isDUA && <Tag colorClass="bg-blue-200 text-blue-800 font-bold">DUA</Tag>}
                 <Tag colorClass="bg-indigo-100 text-indigo-800">{activity.discipline}</Tag>
-                {activity.skills.slice(0, 3).map(skill => (
+                {Array.isArray(activity.skills) && activity.skills.slice(0, 3).map(skill => (
                     <Tag key={skill} colorClass="bg-green-100 text-green-800">{skill}</Tag>
                 ))}
-                {activity.needs.slice(0, 3).map(need => (
+                {Array.isArray(activity.needs) && activity.needs.slice(0, 3).map(need => (
                     <Tag key={need} colorClass="bg-sky-100 text-sky-800">{need}</Tag>
                 ))}
             </div>
@@ -528,7 +529,7 @@ const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit
 // --- MERGED FROM components/PeiFormView.tsx ---
 const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [currentPeiId, setCurrentPeiId] = useState(editingPeiId);
-    const [peiData, setPeiData] = useState({});
+    const [peiData, setPeiData] = useState<PeiData>({});
     const [loadingStates, setLoadingStates] = useState({});
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState({ title: '', content: null, footer: null });
@@ -544,7 +545,8 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [refinementInstruction, setRefinementInstruction] = useState('');
     const [isRefinementInputVisible, setIsRefinementInputVisible] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-    const [smartAnalysisResults, setSmartAnalysisResults] = useState({});
+    const [smartAnalysisResults, setSmartAnalysisResults] = useState<Record<string, any>>({});
+    const [goalActivities, setGoalActivities] = useState<Record<string, Activity[]>>({});
     const [openSmartAnalysis, setOpenSmartAnalysis] = useState({});
     const [errors, setErrors] = useState({});
     const [autoSaveStatus, setAutoSaveStatus] = useState('ocioso'); // 'ocioso', 'salvando', 'salvo'
@@ -576,11 +578,11 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
         ...fieldOrderForPreview.find(s => s.title.startsWith("2."))!.fields.map(f => f.id)
     ];
 
-    const autoSaveDataRef = useRef({ peiData, aiGeneratedFields, smartAnalysisResults, currentPeiId });
+    const autoSaveDataRef = useRef({ peiData, aiGeneratedFields, smartAnalysisResults, goalActivities, currentPeiId });
 
     useEffect(() => {
-        autoSaveDataRef.current = { peiData, aiGeneratedFields, smartAnalysisResults, currentPeiId };
-    }, [peiData, aiGeneratedFields, smartAnalysisResults, currentPeiId]);
+        autoSaveDataRef.current = { peiData, aiGeneratedFields, smartAnalysisResults, goalActivities, currentPeiId };
+    }, [peiData, aiGeneratedFields, smartAnalysisResults, goalActivities, currentPeiId]);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -588,6 +590,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
                 peiData: currentPeiData,
                 aiGeneratedFields: currentAiFields,
                 smartAnalysisResults: currentSmartResults,
+                goalActivities: currentGoalActivities,
                 currentPeiId: currentId,
             } = autoSaveDataRef.current;
             
@@ -599,6 +602,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
                     data: currentPeiData,
                     aiGeneratedFields: Array.from(currentAiFields),
                     smartAnalysisResults: currentSmartResults,
+                    goalActivities: currentGoalActivities,
                 };
                 
                 const savedRecord = savePei(recordData, currentId, studentName);
@@ -625,6 +629,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
                 setPeiData(peiToLoad.data);
                 setAiGeneratedFields(new Set(peiToLoad.aiGeneratedFields || []));
                 setSmartAnalysisResults(peiToLoad.smartAnalysisResults || {});
+                setGoalActivities(peiToLoad.goalActivities || {});
                 setOpenSmartAnalysis({});
             }
         } else {
@@ -835,6 +840,10 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                         if (isDuaField) {
                             activities = activities.map(act => ({ ...act, isDUA: true }));
                         }
+                        
+                        if (isGoalField) {
+                            setGoalActivities(prev => ({ ...prev, [fieldId]: activities }));
+                        }
 
                         const handleSaveActivities = () => {
                             addActivitiesToBank(activities, currentPeiId);
@@ -966,6 +975,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         setPeiData({});
         setAiGeneratedFields(new Set());
         setSmartAnalysisResults({});
+        setGoalActivities({});
         setOpenSmartAnalysis({});
         setErrors({});
         setCurrentPeiId(null);
@@ -981,6 +991,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
             data: peiData,
             aiGeneratedFields: Array.from(aiGeneratedFields),
             smartAnalysisResults: smartAnalysisResults,
+            goalActivities: goalActivities,
         };
 
         const studentName = peiData['aluno-nome'] || 'PEI sem nome';
@@ -1081,6 +1092,24 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         setIsEditModalOpen(true);
     };
     
+    const handleViewGoalActivities = (fieldId: string) => {
+        const activities = goalActivities[fieldId];
+        if (!activities || activities.length === 0) return;
+
+        const fieldLabel = fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label || '';
+
+        setModalContent({
+            title: `Atividades para a Meta: "${fieldLabel}"`,
+            content: renderSuggestedActivities(activities),
+            footer: (
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200">
+                    Fechar
+                </button>
+            )
+        });
+        setIsModalOpen(true);
+    };
+
     const renderField = (field) => {
         const { id, label } = field;
         const hasError = !!errors[id];
@@ -1119,6 +1148,16 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                         error={errors[id]}
                         isAiActionDisabled={!areRequiredFieldsFilled}
                     />
+                    {isGoal && goalActivities[id] && goalActivities[id].length > 0 && (
+                         <button
+                            type="button"
+                            onClick={() => handleViewGoalActivities(id)}
+                            className="mt-2 px-4 py-2 text-sm font-medium text-blue-800 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
+                        >
+                            <i className="fa-solid fa-list-check"></i>
+                            Ver Atividades para a Meta
+                        </button>
+                    )}
                     {goalFields.includes(id) && smartAnalysisResults[id] && (
                         <div className="mt-2 border border-gray-200 rounded-lg shadow-sm">
                             <button
@@ -1491,7 +1530,7 @@ const ActivityDetailView = () => {
                     </div>
                     <div>
                         <strong className="block text-gray-500">Habilidades Trabalhadas</strong>
-                        {activity.skills?.length > 0 ? (
+                        {Array.isArray(activity.skills) && activity.skills?.length > 0 ? (
                             <div className="flex flex-wrap gap-2 mt-1">
                                 {activity.skills.map(skill => <Tag key={skill} colorClass="bg-green-100 text-green-800">{skill}</Tag>)}
                             </div>
@@ -1499,7 +1538,7 @@ const ActivityDetailView = () => {
                     </div>
                     <div>
                         <strong className="block text-gray-500">Necessidades Específicas</strong>
-                        {activity.needs?.length > 0 ? (
+                        {Array.isArray(activity.needs) && activity.needs?.length > 0 ? (
                             <div className="flex flex-wrap gap-2 mt-1">
                                 {activity.needs.map(need => <Tag key={need} colorClass="bg-sky-100 text-sky-800">{need}</Tag>)}
                             </div>
@@ -1514,12 +1553,12 @@ const ActivityDetailView = () => {
 
 // --- MERGED FROM components/ActivityBankView.tsx ---
 const ActivityBankView = () => {
-    const [activities, setActivities] = useState([]);
+    const [activities, setActivities] = useState<Activity[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
     const [disciplineFilter, setDisciplineFilter] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingActivity, setEditingActivity] = useState(null);
+    const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [isRefinementInputVisible, setIsRefinementInputVisible] = useState(false);
     const [refinementInstruction, setRefinementInstruction] = useState('');
     const [isRegenerating, setIsRegenerating] = useState(false);
@@ -1554,26 +1593,26 @@ const ActivityBankView = () => {
 
     const favoriteCount = useMemo(() => activities.filter(a => a.isFavorited).length, [activities]);
 
-    const updateAndSaveActivities = (updatedActivities) => {
+    const updateAndSaveActivities = (updatedActivities: Activity[]) => {
         setActivities(updatedActivities);
         saveActivities(updatedActivities);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = (id: string) => {
         if (window.confirm('Tem certeza que deseja excluir esta atividade do banco?')) {
             const updated = activities.filter(a => a.id !== id);
             updateAndSaveActivities(updated);
         }
     };
 
-    const handleToggleFavorite = (id) => {
+    const handleToggleFavorite = (id: string) => {
         const updated = activities.map(a => 
             a.id === id ? { ...a, isFavorited: !a.isFavorited } : a
         );
         updateAndSaveActivities(updated);
     };
     
-    const handleAddToPei = (activity) => {
+    const handleAddToPei = (activity: Activity) => {
         if (!editingPeiId) {
             alert('Por favor, abra um PEI na tela "PEIs Salvos" ou inicie um novo no "Editor PEI" antes de adicionar uma atividade.');
             return;
@@ -1583,7 +1622,7 @@ const ActivityBankView = () => {
         navigateToEditPei(editingPeiId);
     };
 
-    const handleOpenEditModal = (activity) => {
+    const handleOpenEditModal = (activity: Activity) => {
         setEditingActivity({ ...activity });
         setIsEditModalOpen(true);
     };
@@ -1648,13 +1687,13 @@ const ActivityBankView = () => {
         handleCloseEditModal();
     };
 
-    const handleEditFormChange = (e) => {
+    const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         if (!editingActivity) return;
         const { id, value } = e.target;
-        setEditingActivity(prev => ({
+        setEditingActivity(prev => prev ? ({
             ...prev,
             [id]: value
-        }));
+        }) : null);
     };
 
     const handleActivityRefinement = async () => {
@@ -1689,7 +1728,7 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
         }
     };
 
-    const handleViewActivity = (activityId) => {
+    const handleViewActivity = (activityId: string) => {
         navigateToActivityDetail(activityId);
     };
 
@@ -1920,21 +1959,21 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
 
 // --- MERGED FROM components/PeiListView.tsx ---
 const PeiListView = () => {
-  const [peis, setPeis] = useState([]);
+  const [peis, setPeis] = useState<PeiRecord[]>([]);
   const { navigateToEditPei, navigateToNewPei } = useAppStore();
 
   useEffect(() => {
     setPeis(getAllPeis());
   }, []);
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este PEI? Esta ação não pode ser desfeita.')) {
         deletePei(id);
         setPeis(getAllPeis());
     }
   };
 
-  const formatDate = (isoString) => {
+  const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('pt-BR', {
         day: '2-digit',
         month: 'long',
@@ -2001,8 +2040,8 @@ const PeiListView = () => {
 
 // --- MERGED FROM components/SupportFilesView.tsx ---
 const SupportFilesView = () => {
-    const [files, setFiles] = useState([]);
-    const fileInputRef = useRef(null);
+    const [files, setFiles] = useState<RagFile[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         setFiles(getAllRagFiles());
@@ -2041,7 +2080,7 @@ const SupportFilesView = () => {
         }
     };
 
-    const handleToggleSelect = (fileName) => {
+    const handleToggleSelect = (fileName: string) => {
         const updatedFiles = files.map(file =>
             file.name === fileName ? { ...file, selected: !file.selected } : file
         );
@@ -2049,7 +2088,7 @@ const SupportFilesView = () => {
         saveRagFiles(updatedFiles);
     };
 
-    const handleDeleteFile = (fileName) => {
+    const handleDeleteFile = (fileName: string) => {
         if (window.confirm(`Tem certeza que deseja excluir o ficheiro "${fileName}"?`)) {
             const updatedFiles = files.filter(file => file.name !== fileName);
             setFiles(updatedFiles);
