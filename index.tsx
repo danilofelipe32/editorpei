@@ -1517,6 +1517,7 @@ const ActivityBankView = () => {
     const [activities, setActivities] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+    const [disciplineFilter, setDisciplineFilter] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState(null);
     const [isRefinementInputVisible, setIsRefinementInputVisible] = useState(false);
@@ -1535,6 +1536,9 @@ const ActivityBankView = () => {
                 if (showOnlyFavorites && !activity.isFavorited) {
                     return false;
                 }
+                if (disciplineFilter && activity.discipline !== disciplineFilter) {
+                    return false;
+                }
                 if (searchTerm.trim() === '') {
                     return true;
                 }
@@ -1546,7 +1550,7 @@ const ActivityBankView = () => {
                 );
             })
             .sort((a, b) => (b.isFavorited ? 1 : 0) - (a.isFavorited ? 1 : 0));
-    }, [activities, searchTerm, showOnlyFavorites]);
+    }, [activities, searchTerm, showOnlyFavorites, disciplineFilter]);
 
     const favoriteCount = useMemo(() => activities.filter(a => a.isFavorited).length, [activities]);
 
@@ -1584,6 +1588,24 @@ const ActivityBankView = () => {
         setIsEditModalOpen(true);
     };
 
+    const handleOpenCreateModal = () => {
+        setEditingActivity({
+            id: 'new',
+            title: '',
+            description: '',
+            discipline: disciplineOptions[0],
+            skills: [],
+            needs: [],
+            isFavorited: false,
+            isDUA: false,
+            goalTags: [],
+            rating: null,
+            comments: '',
+            sourcePeiId: null
+        });
+        setIsEditModalOpen(true);
+    };
+
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
         setEditingActivity(null);
@@ -1608,10 +1630,21 @@ const ActivityBankView = () => {
             needs: needsArray,
         };
         
-        const updated = activities.map(a => 
-            a.id === finalActivity.id ? finalActivity : a
-        );
-        updateAndSaveActivities(updated);
+        let updatedActivities;
+        if (finalActivity.id === 'new') {
+            const newActivity = { 
+                ...finalActivity, 
+                id: crypto.randomUUID(), 
+                sourcePeiId: null 
+            };
+            updatedActivities = [...activities, newActivity];
+        } else {
+            updatedActivities = activities.map(a => 
+                a.id === finalActivity.id ? finalActivity : a
+            );
+        }
+        
+        updateAndSaveActivities(updatedActivities);
         handleCloseEditModal();
     };
 
@@ -1662,7 +1695,17 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
 
     return (
         <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Banco de Atividades e Recursos</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-3xl font-bold text-gray-800">Banco de Atividades e Recursos</h2>
+                <button
+                    type="button"
+                    onClick={handleOpenCreateModal}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                >
+                    <i className="fa-solid fa-plus"></i>
+                    Criar Nova Atividade
+                </button>
+            </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 flex items-center gap-5">
@@ -1686,7 +1729,7 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-md mb-8 border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
                     <div className="md:col-span-2">
                         <label htmlFor="search-activities" className="block text-sm font-medium text-gray-700 mb-1">
                             Pesquisar Atividades
@@ -1700,7 +1743,21 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
                             className="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500"
                         />
                     </div>
-                    <div className="flex items-center mt-5">
+                    <div>
+                        <label htmlFor="discipline-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                            Disciplina
+                        </label>
+                        <select
+                            id="discipline-filter"
+                            value={disciplineFilter}
+                            onChange={(e) => setDisciplineFilter(e.target.value)}
+                            className="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500"
+                        >
+                            <option value="">Todas</option>
+                            {disciplineOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex items-center pb-2">
                          <input
                             id="filter-favorites"
                             type="checkbox"
@@ -1740,7 +1797,7 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
             {editingActivity && (
                 <Modal
                     id="edit-activity-modal"
-                    title="Editar Atividade"
+                    title={editingActivity?.id === 'new' ? 'Criar Nova Atividade' : 'Editar Atividade'}
                     isOpen={isEditModalOpen}
                     onClose={handleCloseEditModal}
                     footer={
@@ -1749,7 +1806,7 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
                                 Cancelar
                             </button>
                             <button type="button" onClick={handleSaveEditedActivity} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
-                                Salvar Alterações
+                                Salvar
                             </button>
                         </>
                     }
@@ -1900,7 +1957,7 @@ const PeiListView = () => {
       </div>
 
       {peis.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-lg">
+        <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-lg bg-white">
             <div className="text-5xl text-gray-400 mb-4"><i className="fa-regular fa-file-lines"></i></div>
             <h3 className="text-xl font-semibold text-gray-700">Nenhum PEI encontrado</h3>
             <p className="text-gray-500 mt-2">Comece a criar um novo Plano Educacional Individualizado.</p>
@@ -2024,7 +2081,7 @@ const SupportFilesView = () => {
             </button>
 
             {files.length === 0 ? (
-                <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-lg bg-white">
                     <div className="text-5xl text-gray-400 mb-4"><i className="fa-regular fa-folder-open"></i></div>
                     <h3 className="text-xl font-semibold text-gray-700">Nenhum ficheiro de apoio</h3>
                     <p className="text-gray-500 mt-2">Anexe documentos para fornecer contexto adicional à IA.</p>
@@ -2172,7 +2229,7 @@ const PrivacyPolicyView = () => {
 
 // --- MERGED FROM App.tsx ---
 const App = () => {
-    const { currentView, editingPeiId } = useAppStore();
+    const { currentView, editingPeiId, viewingActivityId } = useAppStore();
     const { navigateToView, navigateToNewPei } = useAppStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -2183,6 +2240,29 @@ const App = () => {
             navigateToView(targetView);
         }
         setIsSidebarOpen(false);
+    };
+
+    const renderCurrentView = () => {
+        switch (currentView) {
+            case 'pei-form-view':
+                return <PeiFormView 
+                            key={editingPeiId || 'new'} 
+                            editingPeiId={editingPeiId} 
+                            onSaveSuccess={() => navigateToView('pei-list-view')} 
+                        />;
+            case 'activity-bank-view':
+                return <ActivityBankView />;
+            case 'pei-list-view':
+                return <PeiListView />;
+            case 'files-view':
+                return <SupportFilesView />;
+            case 'privacy-policy-view':
+                return <PrivacyPolicyView />;
+            case 'activity-detail-view':
+                return <ActivityDetailView />;
+            default:
+                return <div>Página não encontrada</div>;
+        }
     };
 
     return (
@@ -2204,23 +2284,13 @@ const App = () => {
             
             <main className="flex-1 flex flex-col overflow-hidden">
                  <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-100">
-                    {currentView === 'pei-form-view' && (
-                        <PeiFormView 
-                            key={editingPeiId || 'new'} 
-                            editingPeiId={editingPeiId} 
-                            onSaveSuccess={() => navigateToView('pei-list-view')} 
-                        />
-                    )}
-                    {currentView === 'activity-bank-view' && <ActivityBankView />}
-                    {currentView === 'activity-detail-view' && <ActivityDetailView />}
-                    {currentView === 'pei-list-view' && <PeiListView />}
-                    {currentView === 'files-view' && <SupportFilesView />}
-                    {currentView === 'privacy-policy-view' && <PrivacyPolicyView />}
+                    {renderCurrentView()}
                  </div>
             </main>
         </div>
     );
 };
+
 
 const Sidebar = ({ isSidebarOpen, onNavigate }) => {
     const currentView = useAppStore((state) => state.currentView);
@@ -2295,25 +2365,17 @@ const Sidebar = ({ isSidebarOpen, onNavigate }) => {
 };
 
 
-// --- ORIGINAL index.tsx LOGIC ---
+// --- FINAL RENDER ---
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+// Service Worker Registration
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(registration => {
-      console.log('Service Worker registrado com sucesso: ', registration);
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+      console.log('SW registered: ', registration);
     }).catch(registrationError => {
-      console.log('Falha no registro do Service Worker: ', registrationError);
+      console.log('SW registration failed: ', registrationError);
     });
   });
 }
-
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
-
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
