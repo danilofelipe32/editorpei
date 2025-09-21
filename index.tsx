@@ -1,7 +1,8 @@
+// FIX: Add necessary imports for React, ReactDOM, Zustand, and Google GenAI to resolve undefined errors across the application.
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { create } from 'zustand';
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 // --- MERGED FROM types.ts ---
 type ViewType = 'pei-form-view' | 'activity-bank-view' | 'pei-list-view' | 'files-view' | 'privacy-policy-view';
@@ -114,8 +115,8 @@ const labelToIdMap = fieldOrderForPreview.flatMap(s => s.fields).reduce((acc, fi
 
 
 // --- MERGED FROM services/geminiService.ts ---
-const geminiApiKey = "AIzaSyD6UCwmLhN0eMKrLw53YUoJS3QzLxr0rmk";
-const geminiAi = new GoogleGenAI({ apiKey: geminiApiKey });
+// FIX: Use process.env.API_KEY as per the guidelines instead of a hardcoded key.
+const geminiAi = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const callGenerativeAI = async (prompt: string): Promise<string> => {
     try {
@@ -513,6 +514,7 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [editModalData, setEditModalData] = useState(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [refinementInstruction, setRefinementInstruction] = useState('');
+    const [isRefinementInputVisible, setIsRefinementInputVisible] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [smartAnalysisResults, setSmartAnalysisResults] = useState({});
     const [openSmartAnalysis, setOpenSmartAnalysis] = useState({});
@@ -886,6 +888,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         setIsEditModalOpen(false);
         setEditModalData(null);
         setRefinementInstruction('');
+        setIsRefinementInputVisible(false);
     };
 
     const handleEditModalRegenerate = async () => {
@@ -914,12 +917,13 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
             const response = await callGenerativeAI(prompt);
             setEditModalData(prev => prev ? { ...prev, text: response } : null);
             setAiGeneratedFields(prev => new Set(prev).add(fieldId));
-            setRefinementInstruction(''); 
         } catch (error) {
             console.error('Error during regeneration:', error);
             alert('Ocorreu um erro ao refinar o conteúdo.');
         } finally {
             setIsRegenerating(false);
+            setIsRefinementInputVisible(false);
+            setRefinementInstruction('');
         }
     };
 
@@ -995,21 +999,13 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
     };
 
     const handleEditClick = (fieldId) => {
-        if (aiGeneratedFields.has(fieldId)) {
-            const fieldLabel = fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label || '';
-            setEditModalData({
-                fieldId,
-                label: fieldLabel,
-                text: peiData[fieldId] || '',
-            });
-            setIsEditModalOpen(true);
-        } else {
-            const textarea = document.getElementById(fieldId) as HTMLTextAreaElement;
-            if (textarea) {
-                textarea.focus();
-                textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-            }
-        }
+        const fieldLabel = fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label || '';
+        setEditModalData({
+            fieldId,
+            label: fieldLabel,
+            text: peiData[fieldId] || '',
+        });
+        setIsEditModalOpen(true);
     };
     
     const renderField = (field) => {
@@ -1212,24 +1208,6 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                             >
                                 Cancelar
                             </button>
-                             <button 
-                                type="button" 
-                                onClick={handleEditModalRegenerate} 
-                                disabled={isRegenerating}
-                                className="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-lg hover:bg-indigo-200 disabled:bg-indigo-50 flex items-center gap-2"
-                            >
-                                {isRegenerating ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-                                        Refinando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="fa-solid fa-wand-magic-sparkles"></i>
-                                        Refinar com IA
-                                    </>
-                                )}
-                            </button>
                             <button
                                 onClick={handleEditModalSave}
                                 className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
@@ -1247,15 +1225,50 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                         placeholder="Edite o conteúdo aqui..."
                     />
                     <div className="mt-4">
-                        <label htmlFor="refinement-instruction" className="block text-sm font-medium text-gray-700 mb-1">Instrução para Refinamento (Opcional):</label>
-                        <input
-                            type="text"
-                            id="refinement-instruction"
-                            value={refinementInstruction}
-                            onChange={(e) => setRefinementInstruction(e.target.value)}
-                            className="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500"
-                            placeholder="Ex: 'Torne o texto mais formal', 'Adicione um exemplo prático', etc."
-                        />
+                        {!isRefinementInputVisible ? (
+                             <button
+                                type="button"
+                                onClick={() => setIsRefinementInputVisible(true)}
+                                className="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-lg hover:bg-indigo-200 flex items-center gap-2 transition-all duration-200 ease-in-out"
+                            >
+                                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                Assim mas...
+                            </button>
+                        ) : (
+                             <div className="space-y-2 p-4 border border-indigo-200 rounded-lg bg-indigo-50/50 animate-fade-in">
+                                <label htmlFor="refinement-instruction" className="block text-sm font-medium text-gray-700">Instrução para Refinamento:</label>
+                                <input
+                                    type="text"
+                                    id="refinement-instruction"
+                                    value={refinementInstruction}
+                                    onChange={(e) => setRefinementInstruction(e.target.value)}
+                                    className="w-full p-2.5 border rounded-lg bg-white text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500"
+                                    placeholder="Ex: 'Torne o texto mais formal', 'Adicione um exemplo prático', etc."
+                                />
+                                <div className="flex items-center justify-end gap-2 pt-1">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsRefinementInputVisible(false)}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleEditModalRegenerate} 
+                                        disabled={isRegenerating}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 flex items-center justify-center gap-2"
+                                        style={{minWidth: '90px'}}
+                                    >
+                                        {isRegenerating ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        ) : (
+                                            "Enviar"
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </Modal>
             )}
