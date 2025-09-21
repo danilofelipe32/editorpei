@@ -1350,6 +1350,9 @@ const ActivityBankView = () => {
     const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState(null);
+    const [isRefinementInputVisible, setIsRefinementInputVisible] = useState(false);
+    const [refinementInstruction, setRefinementInstruction] = useState('');
+    const [isRegenerating, setIsRegenerating] = useState(false);
     
     const { editingPeiId, navigateToEditPei } = useAppStore();
 
@@ -1415,6 +1418,8 @@ const ActivityBankView = () => {
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
         setEditingActivity(null);
+        setIsRefinementInputVisible(false);
+        setRefinementInstruction('');
     };
 
     const handleSaveEditedActivity = () => {
@@ -1448,6 +1453,38 @@ const ActivityBankView = () => {
             ...prev,
             [id]: value
         }));
+    };
+
+    const handleActivityRefinement = async () => {
+        if (!editingActivity || !editingActivity.description) return;
+        setIsRegenerating(true);
+        try {
+            const instruction = refinementInstruction || 'Por favor, refine e aprimore esta descrição.';
+            const prompt = `Aja como um especialista em pedagogia. O usuário está editando a descrição de uma atividade educacional.
+
+Atividade:
+- Título: ${editingActivity.title}
+- Disciplina: ${editingActivity.discipline}
+
+Descrição Atual:
+---
+${editingActivity.description}
+---
+
+O usuário forneceu a seguinte instrução para refinar a descrição: "${instruction}".
+
+Refine a descrição atual com base na instrução e no contexto. Mantenha o propósito original, mas aprimore a clareza, o engajamento e a adequação pedagógica. Devolva apenas o texto da descrição aprimorada, sem títulos ou introduções.`;
+
+            const response = await callGenerativeAI(prompt);
+            setEditingActivity(prev => prev ? { ...prev, description: response } : null);
+        } catch (error) {
+            console.error('Error during activity refinement:', error);
+            alert('Ocorreu um erro ao refinar a descrição da atividade.');
+        } finally {
+            setIsRegenerating(false);
+            setIsRefinementInputVisible(false);
+            setRefinementInstruction('');
+        }
     };
 
     return (
@@ -1564,6 +1601,52 @@ const ActivityBankView = () => {
                                 onChange={handleEditFormChange}
                                 className="w-full p-2.5 border rounded-lg bg-gray-50 border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500"
                             />
+                        </div>
+                        <div className="mt-2 mb-2">
+                            {!isRefinementInputVisible ? (
+                                 <button
+                                    type="button"
+                                    onClick={() => setIsRefinementInputVisible(true)}
+                                    className="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-lg hover:bg-indigo-200 flex items-center gap-2 transition-all duration-200 ease-in-out"
+                                >
+                                    <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                    Assim mas... (refinar descrição)
+                                </button>
+                            ) : (
+                                 <div className="space-y-2 p-4 border border-indigo-200 rounded-lg bg-indigo-50/50 animate-fade-in">
+                                    <label htmlFor="activity-refinement-instruction" className="block text-sm font-medium text-gray-700">Instrução para Refinamento:</label>
+                                    <input
+                                        type="text"
+                                        id="activity-refinement-instruction"
+                                        value={refinementInstruction}
+                                        onChange={(e) => setRefinementInstruction(e.target.value)}
+                                        className="w-full p-2.5 border rounded-lg bg-white text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500"
+                                        placeholder="Ex: 'Torne mais lúdico', 'Adicione um exemplo', etc."
+                                    />
+                                    <div className="flex items-center justify-end gap-2 pt-1">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setIsRefinementInputVisible(false)}
+                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            onClick={handleActivityRefinement} 
+                                            disabled={isRegenerating}
+                                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 flex items-center justify-center gap-2"
+                                            style={{minWidth: '90px'}}
+                                        >
+                                            {isRegenerating ? (
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            ) : (
+                                                "Enviar"
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label htmlFor="discipline" className="block text-sm font-medium text-gray-700 mb-1">Disciplina</label>
