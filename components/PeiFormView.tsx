@@ -207,15 +207,15 @@ export const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     
             switch (action) {
                 case 'ai':
-                    const fieldLabel = fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label || '';
-                    const aiPrompt = `Aja como um especialista em educação inclusiva. Sua tarefa é preencher o campo "${fieldLabel}" de um Plano Educacional Individualizado (PEI).
+                    const fieldLabelAi = fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label || '';
+                    const aiPrompt = `Aja como um especialista em educação inclusiva. Sua tarefa é preencher o campo "${fieldLabelAi}" de um Plano Educacional Individualizado (PEI).
                     
 Para garantir coesão e coerência (Chain of Thought), analise CUIDADOSAMENTE os ficheiros de apoio (se houver) e os campos já preenchidos do PEI antes de gerar sua resposta.
 
 ${ragContext}
 ${formContext}
                     
-Agora, com base em TODO o contexto fornecido, gere o conteúdo para o campo: "${fieldLabel}".
+Agora, com base em TODO o contexto fornecido, gere o conteúdo para o campo: "${fieldLabelAi}".
 Sua resposta deve ser apenas o texto para este campo, sem introduções ou títulos.`;
 
                     response = await callGenerativeAI(aiPrompt);
@@ -259,17 +259,35 @@ Sua resposta DEVE ser um objeto JSON válido, sem nenhum texto adicional antes o
                     break;
     
                 case 'suggest':
-                    const goalForActivities = peiData[fieldId] || '';
-                    if (!goalForActivities) {
-                        alert('Por favor, preencha o campo da meta antes de solicitar sugestões de atividades.');
-                        return;
-                    }
-                    const suggestPrompt = `Com base na seguinte meta de um PEI e nas informações do aluno, sugira 3 a 5 atividades educacionais adaptadas.
-                    
-Informações do Aluno:
-${studentInfoForSimpleActions}
+                    const isDuaField = fieldId === 'dua-content';
+                    const isGoalField = ['metas-curto', 'metas-medio', 'metas-longo'].includes(fieldId);
 
-Meta: "${goalForActivities}"
+                    let promptContext = '';
+                    let promptSubject = '';
+                    
+                    if (isGoalField) {
+                        const goalTextForSuggest = peiData[fieldId] || '';
+                        if (!goalTextForSuggest.trim()) {
+                            alert('Por favor, preencha o campo da meta antes de solicitar sugestões de atividades.');
+                            return;
+                        }
+                        promptContext = `Informações do Aluno: ${studentInfoForSimpleActions}`;
+                        promptSubject = `na seguinte meta de um PEI: "${goalTextForSuggest}"`;
+                    } else { // For 'atividades-content' and 'dua-content'
+                        if (!areRequiredFieldsFilled) {
+                            validateForm();
+                            return;
+                        }
+                        promptContext = `${ragContext}\n${formContext}`;
+                        promptSubject = 'no contexto completo do PEI fornecido';
+                    }
+
+                    const duaInstruction = isDuaField ? 'Com base nos princípios do Desenho Universal para a Aprendizagem (DUA) e' : 'Com base';
+
+                    const suggestPrompt = `${duaInstruction} ${promptSubject}, sugira 3 a 5 atividades educacionais adaptadas.
+                    
+Contexto:
+${promptContext}
 
 Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicional antes ou depois. Use a seguinte estrutura:
 [
@@ -279,7 +297,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
     "discipline": "...",
     "skills": ["...", "..."],
     "needs": ["...", "..."],
-    "goalTags": ["..."]
+    "goalTags": [${isDuaField ? '"DUA"' : '"..."'}]
   }
 ]`;
                     response = await callGenerativeAI(suggestPrompt);
@@ -290,10 +308,14 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                             throw new Error("Valid JSON array not found in response.");
                         }
                         const jsonString = response.substring(startIndex, endIndex + 1);
-                        const activities = JSON.parse(jsonString);
+                        let activities = JSON.parse(jsonString);
 
                         if (!Array.isArray(activities)) {
                             throw new Error("Response is not an array.");
+                        }
+
+                        if (isDuaField) {
+                            activities = activities.map(act => ({ ...act, isDUA: true }));
                         }
 
                         const handleSaveActivities = () => {
@@ -301,9 +323,11 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                             alert(`${activities.length} atividades foram salvas com sucesso no Banco de Atividades!`);
                             setIsModalOpen(false);
                         };
-
+                        
+                        const fieldLabel = fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label || '';
+                        
                         setModalContent({
-                            title: `Atividades Sugeridas para "${fieldOrderForPreview.flatMap(s => s.fields).find(f => f.id === fieldId)?.label}"`,
+                            title: `Atividades Sugeridas para "${fieldLabel}"`,
                             content: renderSuggestedActivities(activities),
                             footer: (
                                 <>
@@ -513,8 +537,12 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         ];
 
         const goalFields = ['metas-curto', 'metas-medio', 'metas-longo'];
+        const activitySuggestionFields = ['atividades-content', 'dua-content'];
 
         if (textAreaFields.includes(id)) {
+            const isGoal = goalFields.includes(id);
+            const canSuggestActivities = isGoal || activitySuggestionFields.includes(id);
+
             return (
                 <div key={id} className="md:col-span-2">
                     <TextAreaWithActions
@@ -523,15 +551,15 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                         value={peiData[id] || ''}
                         onChange={(value) => handleTextAreaChange(id, value)}
                         onAiClick={() => handleActionClick(id, 'ai')}
-                        onSmartClick={goalFields.includes(id) ? () => handleActionClick(id, 'smart') : undefined}
-                        onSuggestClick={goalFields.includes(id) ? () => handleActionClick(id, 'suggest') : undefined}
+                        onSmartClick={isGoal ? () => handleActionClick(id, 'smart') : undefined}
+                        onSuggestClick={canSuggestActivities ? () => handleActionClick(id, 'suggest') : undefined}
                         onEditClick={() => handleEditClick(id)}
                         isAiLoading={loadingStates[`${id}-ai`]}
                         isSmartLoading={loadingStates[`${id}-smart`]}
                         isSuggestLoading={loadingStates[`${id}-suggest`]}
-                        isGoal={goalFields.includes(id)}
+                        isGoal={canSuggestActivities}
                         placeholder={`Descreva sobre "${label}" aqui...`}
-                        rows={goalFields.includes(id) ? 6 : 5}
+                        rows={isGoal ? 6 : 5}
                         helpText={helpTexts[id]}
                         error={errors[id]}
                         isAiActionDisabled={!areRequiredFieldsFilled}

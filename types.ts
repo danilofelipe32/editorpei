@@ -46,4 +46,5 @@ export interface Activity {
     rating: 'like' | 'dislike' | null;
     comments: string;
     sourcePeiId: string | null;
+    isDUA?: boolean;
 }

@@ -7,8 +7,12 @@ const Tag = ({ children, colorClass }) => (
 );
 
 export const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei, onEdit }) => {
+    const cardBaseStyle = "bg-white p-5 rounded-xl shadow-md border transition-shadow hover:shadow-lg";
+    const duaStyle = "bg-blue-50 border-blue-200 hover:shadow-blue-100";
+    const normalStyle = "border-gray-200";
+
     return (
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 transition-shadow hover:shadow-lg">
+        <div className={`${cardBaseStyle} ${activity.isDUA ? duaStyle : normalStyle}`}>
             <div className="flex justify-between items-start mb-3">
                 <h3 className="text-lg font-bold text-gray-800 pr-4 flex-1">{activity.title}</h3>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -50,6 +54,7 @@ export const ActivityCard = ({ activity, onDelete, onToggleFavorite, onAddToPei,
             <p className="text-gray-600 text-sm mb-4 leading-relaxed">{activity.description}</p>
 
             <div className="flex flex-wrap gap-2">
+                {activity.isDUA && <Tag colorClass="bg-blue-200 text-blue-800 font-bold">DUA</Tag>}
                 <Tag colorClass="bg-indigo-100 text-indigo-800">{activity.discipline}</Tag>
                 {activity.skills.slice(0, 3).map(skill => (
                     <Tag key={skill} colorClass="bg-green-100 text-green-800">{skill}</Tag>
