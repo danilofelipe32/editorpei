@@ -886,7 +886,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
     "discipline": "...",
     "skills": ["...", "..."],
     "needs": ["...", "..."],
-    "goalTags": [${isDuaField ? '"DUA"' : '"..."'}]
+    "goalTags": ["..."]
   }
 ]`;
                     response = await callGenerativeAI(suggestPrompt);
@@ -903,11 +903,33 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                             throw new Error("Response is not an array.");
                         }
 
-                        if (isDuaField) {
-                            activities = activities.map(act => ({ ...act, isDUA: true }));
-                        }
+                        const goalTypeMap = {
+                            'metas-curto': 'Curto Prazo',
+                            'metas-medio': 'Médio Prazo',
+                            'metas-longo': 'Longo Prazo'
+                        };
+                        const goalTag = goalTypeMap[fieldId];
+
+                        activities = activities.map(act => {
+                            const newTags = new Set(Array.isArray(act.goalTags) ? act.goalTags : []);
+                            let isNowDUA = act.isDUA || false;
+
+                            if (isDuaField) {
+                                newTags.add('DUA');
+                                isNowDUA = true;
+                            }
+                            if (goalTag) {
+                                newTags.add(goalTag);
+                            }
+                            
+                            return {
+                                ...act,
+                                isDUA: isNowDUA,
+                                goalTags: Array.from(newTags)
+                            };
+                        });
                         
-                        if (isGoalField) {
+                        if (isGoalField || isDuaField) {
                             setGoalActivities(prev => ({ ...prev, [fieldId]: activities }));
                         }
 
@@ -1586,6 +1608,7 @@ const ActivityBankView = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
     const [disciplineFilter, setDisciplineFilter] = useState('');
+    const [goalFilter, setGoalFilter] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [isRefinementInputVisible, setIsRefinementInputVisible] = useState(false);
@@ -1607,6 +1630,9 @@ const ActivityBankView = () => {
                 if (disciplineFilter && activity.discipline !== disciplineFilter) {
                     return false;
                 }
+                if (goalFilter && (!activity.goalTags || !activity.goalTags.includes(goalFilter))) {
+                    return false;
+                }
                 if (searchTerm.trim() === '') {
                     return true;
                 }
@@ -1618,7 +1644,7 @@ const ActivityBankView = () => {
                 );
             })
             .sort((a, b) => (b.isFavorited ? 1 : 0) - (a.isFavorited ? 1 : 0));
-    }, [activities, searchTerm, showOnlyFavorites, disciplineFilter]);
+    }, [activities, searchTerm, showOnlyFavorites, disciplineFilter, goalFilter]);
 
     const favoriteCount = useMemo(() => activities.filter(a => a.isFavorited).length, [activities]);
 
@@ -1797,7 +1823,7 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-md mb-8 border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
                     <div className="md:col-span-2">
                         <label htmlFor="search-activities" className="block text-sm font-medium text-gray-700 mb-1">
                             Pesquisar Atividades
@@ -1823,6 +1849,23 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
                         >
                             <option value="">Todas</option>
                             {disciplineOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="goal-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                            Meta Associada
+                        </label>
+                        <select
+                            id="goal-filter"
+                            value={goalFilter}
+                            onChange={(e) => setGoalFilter(e.target.value)}
+                            className="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500"
+                        >
+                            <option value="">Todas</option>
+                            <option value="Curto Prazo">Curto Prazo</option>
+                            <option value="Médio Prazo">Médio Prazo</option>
+                            <option value="Longo Prazo">Longo Prazo</option>
+                            <option value="DUA">DUA</option>
                         </select>
                     </div>
                     <div className="flex items-center pb-2">
