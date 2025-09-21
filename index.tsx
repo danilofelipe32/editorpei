@@ -1,8 +1,8 @@
 // FIX: Polyfill 'process' for browser environment to prevent crash from process.env.API_KEY access.
 // This allows the app to load, although AI features will require a valid API key to be set.
-if (typeof window.process === 'undefined') {
-  // @ts-ignore
-  window.process = { env: { API_KEY: '' } };
+// FIX: Cast `window` to `any` to safely access the non-standard `process` property, resolving the TypeScript error.
+if (typeof (window as any).process === 'undefined') {
+  (window as any).process = { env: { API_KEY: '' } };
 }
 
 // FIX: Add necessary imports for React, ReactDOM, Zustand, and Google GenAI to resolve undefined errors across the application.
@@ -2739,7 +2739,7 @@ const Sidebar = ({ isSidebarOpen, onNavigate }) => {
 
                     <h4 className="font-bold text-gray-800 pt-3 border-t mt-4">Tecnologias Utilizadas:</h4>
                     <p className="text-sm">
-                        Esta aplicação foi construída com React, Zustand, TailwindCSS e é potencializada pela API do Google Gemini.
+                        Esta aplicação foi construída com React, Zustand, TailwindCSS e é potencializada pela ApiFreeLLM.
                     </p>
 
                     <div className="text-center pt-4 border-t mt-4">
