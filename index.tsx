@@ -613,6 +613,10 @@ const PeiFormView = ({ editingPeiId, onSaveSuccess }) => {
     const [openSmartAnalysis, setOpenSmartAnalysis] = useState<Record<string, boolean>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [autoSaveStatus, setAutoSaveStatus] = useState('ocioso'); // 'ocioso', 'salvando', 'salvo'
+    const [isAnalyzingPei, setIsAnalyzingPei] = useState(false);
+    const [isSmartAnalysisModalOpen, setIsSmartAnalysisModalOpen] = useState(false);
+    const [smartAnalysisData, setSmartAnalysisData] = useState(null);
+
 
     const helpTexts = {
         'id-diagnostico': 'Descreva o diagnóstico do aluno (se houver) e as necessidades educacionais específicas decorrentes dele. Ex: TDAH, Dislexia, TEA.',
@@ -1009,6 +1013,63 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         }
     };
     
+    const handleIntelligentAnalysis = async () => {
+        if (!validateForm()) {
+            return;
+        }
+        setIsAnalyzingPei(true);
+        setSmartAnalysisData(null);
+        try {
+            const { ragContext, formContext } = buildAiContext('');
+            const prompt = `
+Aja como uma equipe multidisciplinar de especialistas em educação composta por um pedagogo e um psicopedagogo.
+Sua tarefa é realizar uma análise completa e aprofundada do seguinte Plano Educacional Individualizado (PEI).
+
+Contexto do PEI:
+---
+${formContext}
+---
+
+Ficheiros de Apoio (se houver):
+---
+${ragContext}
+---
+
+Analise o PEI fornecido e retorne um objeto JSON válido, sem nenhum texto ou formatação adicional antes ou depois. A estrutura do JSON deve ser a seguinte:
+
+{
+  "strengths": ["Liste aqui os pontos fortes do PEI, como a clareza das metas, a adequação das estratégias, etc."],
+  "weaknesses": ["Liste aqui os pontos fracos ou áreas que precisam de mais detalhes, como metas vagas, falta de estratégias específicas, etc."],
+  "goalAnalysis": "Forneça uma análise detalhada das metas (curto, médio, longo prazo), avaliando se são SMART (Específicas, Mensuráveis, Atingíveis, Relevantes, Temporais) e se estão alinhadas com o perfil do aluno.",
+  "pedagogicalAnalysis": "Do ponto de vista pedagógico, analise as estratégias, adaptações curriculares e metodologias. Elas são adequadas para as necessidades do aluno? Estão alinhadas com as boas práticas de educação inclusiva?",
+  "psychopedagogicalAnalysis": "Do ponto de vista psicopedagógico, analise a coerência entre o diagnóstico, a avaliação inicial e as propostas de intervenção. O plano considera os aspectos cognitivos, sociais e emocionais do aluno de forma integrada?",
+  "suggestions": ["Liste sugestões práticas e acionáveis para melhorar o PEI, abordando os pontos fracos identificados. Seja específico nas suas recomendações."]
+}
+
+Certifique-se de que sua análise seja construtiva, profissional e baseada em evidências do próprio PEI.`;
+            const response = await callGenerativeAI(prompt);
+             try {
+                const startIndex = response.indexOf('{');
+                const endIndex = response.lastIndexOf('}');
+                if (startIndex === -1 || endIndex === -1) {
+                    throw new Error("Objeto JSON válido não encontrado na resposta.");
+                }
+                const jsonString = response.substring(startIndex, endIndex + 1);
+                const analysis = JSON.parse(jsonString);
+                setSmartAnalysisData(analysis);
+                setIsSmartAnalysisModalOpen(true);
+            } catch (e) {
+                console.error("Falha ao analisar JSON da Análise Inteligente:", e, "Resposta bruta:", response);
+                alert("A IA retornou uma resposta em um formato inesperado para a análise. Por favor, tente novamente.");
+            }
+        } catch (error) {
+            console.error('Erro ao gerar Análise Inteligente:', error);
+            alert('Ocorreu um erro ao gerar a análise. Tente novamente.');
+        } finally {
+            setIsAnalyzingPei(false);
+        }
+    };
+
     const closeEditModal = () => {
         setIsEditModalOpen(false);
         setEditModalData(null);
@@ -1129,6 +1190,56 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                         </div>
                     </div>
                 ))}
+            </div>
+        );
+    };
+
+    const renderIntelligentAnalysisContent = () => {
+        if (!smartAnalysisData) return null;
+    
+        const AnalysisSection = ({ icon, title, content, colorClass = 'indigo' }) => {
+            const isList = Array.isArray(content);
+            const iconMap = {
+                'strengths': 'fa-check-circle',
+                'weaknesses': 'fa-exclamation-triangle',
+                'goalAnalysis': 'fa-bullseye',
+                'pedagogicalAnalysis': 'fa-chalkboard-teacher',
+                'psychopedagogicalAnalysis': 'fa-brain',
+                'suggestions': 'fa-lightbulb'
+            };
+            const colorMap = {
+                'strengths': { bg: 'bg-green-50', text: 'text-green-800', border: 'border-green-200' },
+                'weaknesses': { bg: 'bg-red-50', text: 'text-red-800', border: 'border-red-200' },
+                'suggestions': { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200' },
+                'default': { bg: 'bg-indigo-50', text: 'text-indigo-800', border: 'border-indigo-200' }
+            };
+            const colors = colorMap[colorClass] || colorMap['default'];
+    
+            return (
+                <div className={`p-4 rounded-lg border ${colors.bg} ${colors.border}`}>
+                    <h4 className={`text-md font-bold ${colors.text} flex items-center gap-2 mb-2`}>
+                        <i className={`fa-solid ${iconMap[icon]}`}></i>
+                        {title}
+                    </h4>
+                    {isList ? (
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                            {content.map((item, index) => <li key={index}>{item}</li>)}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-gray-700 leading-relaxed">{content}</p>
+                    )}
+                </div>
+            );
+        };
+    
+        return (
+            <div className="space-y-4">
+                <AnalysisSection icon="strengths" title="Pontos Fortes" content={smartAnalysisData.strengths} colorClass="strengths" />
+                <AnalysisSection icon="weaknesses" title="Pontos a Melhorar" content={smartAnalysisData.weaknesses} colorClass="weaknesses" />
+                <AnalysisSection icon="goalAnalysis" title="Análise de Metas" content={smartAnalysisData.goalAnalysis} colorClass="default" />
+                <AnalysisSection icon="pedagogicalAnalysis" title="Análise Pedagógica" content={smartAnalysisData.pedagogicalAnalysis} colorClass="default" />
+                <AnalysisSection icon="psychopedagogicalAnalysis" title="Análise Psicopedagógica" content={smartAnalysisData.psychopedagogicalAnalysis} colorClass="default" />
+                <AnalysisSection icon="suggestions" title="Sugestões de Melhorias" content={smartAnalysisData.suggestions} colorClass="suggestions" />
             </div>
         );
     };
@@ -1288,6 +1399,25 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                 {modalContent.content}
             </Modal>
             
+            <Modal
+                id="smart-analysis-modal"
+                title="Análise Inteligente do PEI"
+                isOpen={isSmartAnalysisModalOpen}
+                onClose={() => setIsSmartAnalysisModalOpen(false)}
+                footer={
+                    <button
+                        type="button"
+                        onClick={() => setIsSmartAnalysisModalOpen(false)}
+                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                    >
+                        Fechar
+                    </button>
+                }
+                wide
+            >
+                {renderIntelligentAnalysisContent()}
+            </Modal>
+
             <Modal
                 id="full-pei-modal"
                 title="PEI Gerado por IA"
@@ -1467,7 +1597,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                         </div>
                     </div>
                 ))}
-                <div className="flex justify-end items-center flex-wrap gap-4 mt-6">
+                <div className="bg-white p-6 rounded-xl shadow-md mt-6 border border-gray-200 flex justify-end items-center flex-wrap gap-4">
                     <div className="text-sm text-gray-500 italic mr-auto pl-2 transition-opacity duration-500">
                         {autoSaveStatus === 'salvando' && (
                             <span className="flex items-center gap-2">
@@ -1482,11 +1612,33 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                             </span>
                         )}
                     </div>
+                    
+                    <button
+                        type="button"
+                        onClick={handleIntelligentAnalysis}
+                        disabled={isAnalyzingPei || !areRequiredFieldsFilled}
+                        className="px-6 py-2.5 text-sm font-medium text-gray-800 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        title={!areRequiredFieldsFilled ? "Preencha os campos obrigatórios para habilitar" : "Executar análise completa do PEI"}
+                    >
+                        {isAnalyzingPei ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                                Analisando...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fa-solid fa-lightbulb"></i>
+                                Análise Inteligente
+                            </>
+                        )}
+                    </button>
+                    
                     <button 
                         type="button" 
                         onClick={handleGenerateFullPei} 
-                        disabled={isGeneratingFullPei}
-                        className="px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 transition-colors flex items-center gap-2"
+                        disabled={isGeneratingFullPei || !areRequiredFieldsFilled}
+                        className="px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        title={!areRequiredFieldsFilled ? "Preencha os campos obrigatórios para habilitar" : "Gerar PEI completo com IA"}
                     >
                         {isGeneratingFullPei ? (
                             <>
