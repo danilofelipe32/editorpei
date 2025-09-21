@@ -1022,7 +1022,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         try {
             const { ragContext, formContext } = buildAiContext('');
             const prompt = `
-Aja como uma equipe multidisciplinar de especialistas em educação composta por um pedagogo e um psicopedagogo.
+Aja como uma equipe multidisciplinar de especialistas em educação composta por um pedagogo e um psicopedogo.
 Sua tarefa é realizar uma análise completa e aprofundada do seguinte Plano Educacional Individualizado (PEI).
 
 Contexto do PEI:
@@ -1660,10 +1660,12 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                         <i className="fa-solid fa-eye"></i>
                         Pré-visualizar PEI
                     </button>
-                    <button type="button" onClick={handleClearForm} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors flex justify-center">
+                    <button type="button" onClick={handleClearForm} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                        <i className="fa-solid fa-trash-can"></i>
                         Limpar Formulário
                     </button>
-                    <button type="submit" className="col-span-2 px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex justify-center">
+                    <button type="submit" className="col-span-2 px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex items-center justify-center gap-2">
+                        <i className="fa-solid fa-floppy-disk"></i>
                         Salvar PEI
                     </button>
                 </div>
