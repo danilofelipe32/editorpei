@@ -1,25 +1,11 @@
 // sw.js
-const CACHE_NAME = 'assistente-pei-pwa-cache-v4'; // Incremented cache version
+const CACHE_NAME = 'assistente-pei-pwa-cache-v5'; // Incremented cache version
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
   // App source files
-  './index.tsx',
-  './App.tsx',
-  './store.ts', // Added new store file
-  './types.ts',
-  './constants.tsx',
-  './services/geminiService.ts',
-  './services/storageService.ts',
-  './components/Modal.tsx',
-  './components/TextAreaWithActions.tsx',
-  './components/PeiFormView.tsx',
-  './components/ActivityBankView.tsx',
-  './components/PeiListView.tsx',
-  './components/SupportFilesView.tsx',
-  './components/PrivacyPolicyView.tsx',
-  './components/ActivityCard.tsx',
+  './index.tsx', // Main consolidated file
   // External dependencies
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
@@ -27,7 +13,7 @@ const urlsToCache = [
   'https://aistudiocdn.com/react@^19.1.1',
   'https://aistudiocdn.com/react-dom@^19.1.1',
   'https://aistudiocdn.com/@google/genai@^1.19.0',
-  'https://aistudiocdn.com/zustand@^4.5.4' // Added zustand to cache
+  'https://aistudiocdn.com/zustand@^4.5.4'
 ];
 
 // Instala o service worker e armazena os ativos essenciais no cache.
