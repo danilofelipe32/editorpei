@@ -975,6 +975,51 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
         onSaveSuccess();
     };
 
+    const handleDownloadPdf = () => {
+        const previewContent = document.getElementById('pei-preview-content');
+        if (!previewContent) return;
+
+        const studentName = peiData['aluno-nome'] || 'PEI';
+        const printContent = previewContent.innerHTML;
+
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>PEI - ${studentName}</title>
+                        <style>
+                            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px; }
+                            h1, h2, h3 { color: #111; }
+                            h1 { font-size: 2em; text-align: center; margin-bottom: 0.5em; }
+                            h2 { font-size: 1.5em; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 0.5em; margin-top: 1.5em; margin-bottom: 1em; }
+                            h3 { font-size: 1.1em; font-weight: 600; margin-bottom: 0.25em; }
+                            div > div { margin-bottom: 1.5rem; }
+                            div > div > div {
+                                white-space: pre-wrap;
+                                word-wrap: break-word;
+                                background-color: #f9f9f9;
+                                padding: 0.75em;
+                                border-radius: 6px;
+                                border: 1px solid #eee;
+                                color: #555;
+                            }
+                            .italic { font-style: italic; color: #888; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Plano Educacional Individualizado (PEI)</h1>
+                        <h2>Aluno(a): ${studentName}</h2>
+                        ${printContent}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        }
+    };
+
     const renderSmartAnalysis = (analysis: Record<string, {critique: string; suggestion: string}>) => {
         const criteriaMap = {
             isSpecific: "Específica (Specific)", isMeasurable: "Mensurável (Measurable)",
@@ -1176,17 +1221,27 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                 isOpen={isPreviewModalOpen}
                 onClose={() => setIsPreviewModalOpen(false)}
                 footer={
-                    <button
-                        type="button"
-                        onClick={() => setIsPreviewModalOpen(false)}
-                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
-                    >
-                        Fechar
-                    </button>
+                    <>
+                        <button
+                            type="button"
+                            onClick={handleDownloadPdf}
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                        >
+                            <i className="fa-solid fa-file-pdf"></i>
+                            Baixar PDF
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsPreviewModalOpen(false)}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200"
+                        >
+                            Fechar
+                        </button>
+                    </>
                 }
                 wide
             >
-                <div className="prose max-w-none text-gray-800">
+                <div id="pei-preview-content" className="prose max-w-none text-gray-800">
                     {fieldOrderForPreview.map((section, sectionIndex) => (
                         <div key={sectionIndex} className="mb-8 last:mb-0">
                             <h2 className="text-xl font-bold border-b border-gray-300 pb-2 mb-4">{section.title}</h2>
