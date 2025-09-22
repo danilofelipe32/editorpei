@@ -147,7 +147,7 @@ const processQueue = async () => {
         });
 
         if (!response.ok) {
-            throw new Error(`A API retornou um erro HTTP: ${response.status} ${response.statusText}`);
+            throw new Error(`A APIFreeLLM retornou um erro HTTP: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -162,7 +162,7 @@ const processQueue = async () => {
         } else {
             // If rate limited, re-queue the request and wait for the specified time.
             if (data.status === 'rate_limited' && data.retry_after) {
-                console.warn(`Rate limited by API. Retrying after ${data.retry_after} seconds.`);
+                console.warn(`Rate limited by APIFreeLLM. Retrying after ${data.retry_after} seconds.`);
                 // Put the request back at the front of the queue
                 requestQueue.unshift({ prompt, resolve, reject });
                 // Wait for the specified time plus a small buffer before retrying
@@ -170,7 +170,7 @@ const processQueue = async () => {
                 return; // Exit to avoid the standard delay timeout
             }
             // For other errors, reject the promise.
-            throw new Error(`A API retornou um erro: ${data.error || 'Erro desconhecido.'} (Status: ${data.status})`);
+            throw new Error(`A APIFreeLLM retornou um erro: ${data.error || 'Erro desconhecido.'} (Status: ${data.status})`);
         }
     } catch (error) {
         console.error("AI Service Error:", error);
@@ -939,7 +939,7 @@ Sua resposta DEVE ser um objeto JSON válido, sem nenhum texto adicional antes o
                         setOpenSmartAnalysis(prev => ({ ...prev, [fieldId]: true }));
                     } catch (e) {
                         console.error("Failed to parse SMART analysis JSON:", e, "Raw response:", response);
-                        alert("A IA retornou uma resposta em um formato inesperado para a análise SMART. Por favor, tente novamente.");
+                        alert("A APIFreeLLM retornou uma resposta em um formato inesperado para a análise SMART. Por favor, tente novamente.");
                     }
                     break;
     
@@ -1056,7 +1056,7 @@ Sua resposta DEVE ser um array de objetos JSON válido, sem nenhum texto adicion
                         setIsModalOpen(true);
                     } catch(e) {
                         console.error("Failed to parse suggested activities JSON:", e, "Raw response:", response);
-                        alert("A IA retornou uma resposta em um formato inesperado para as sugestões de atividades. Por favor, tente novamente.");
+                        alert("A APIFreeLLM retornou uma resposta em um formato inesperado para as sugestões de atividades. Por favor, tente novamente.");
                     }
                     break;
             }
@@ -1154,7 +1154,7 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                 setIsSmartAnalysisModalOpen(true);
             } catch (e) {
                 console.error("Falha ao analisar JSON da Análise Inteligente:", e, "Resposta bruta:", response);
-                alert("A IA retornou uma resposta em um formato inesperado para a análise. Por favor, tente novamente.");
+                alert("A APIFreeLLM retornou uma resposta em um formato inesperado para a análise. Por favor, tente novamente.");
             }
         } catch (error) {
             console.error('Erro ao gerar Análise Inteligente:', error);
@@ -2544,7 +2544,7 @@ const PrivacyPolicyView = () => {
         </ul>
 
         <SubTitle>b) Dados Enviados para Processamento de IA</SubTitle>
-        <p>Para que as funcionalidades de inteligência artificial funcionem, é necessário enviar informações de contexto do PEI para o nosso provedor de IA, a API do Google Gemini. Estes dados incluem o conteúdo dos campos do formulário (como "Diagnóstico", "Habilidades Acadêmicas" e "Conteúdos do bimestre") e o conteúdo dos ficheiros de apoio selecionados.</p>
+        <p>Para que as funcionalidades de inteligência artificial funcionem, é necessário enviar informações de contexto do PEI para o nosso provedor de IA, a APIFreeLLM. Estes dados incluem o conteúdo dos campos do formulário (como "Diagnóstico", "Habilidades Acadêmicas" e "Conteúdos do bimestre") e o conteúdo dos ficheiros de apoio selecionados.</p>
 
         <SectionTitle>3. Como Usamos as Suas Informações?</SectionTitle>
         <ul className="list-disc list-inside space-y-1 my-3 pl-4">
@@ -2554,13 +2554,13 @@ const PrivacyPolicyView = () => {
 
         <SectionTitle>4. Política de Processamento da IA e Uso para Treinamento</SectionTitle>
         <p>Este é o nosso compromisso mais importante com a sua privacidade.</p>
-        <p>De acordo com a política de privacidade do nosso provedor de IA, Google, os dados enviados através das solicitações da API (ou seja, o conteúdo do seu PEI) <strong>NÃO</strong> são armazenados, monitorados ou utilizados para treinar os modelos de inteligência artificial.</p>
-        <p>As suas conversas com a IA permanecem privadas. O processamento ocorre em tempo real e o conteúdo não é guardado nos servidores da API após a resposta ser gerada.</p>
+        <p>De acordo com a política de privacidade do Llama, os dados enviados através das solicitações da APIFreeLLM (ou seja, o conteúdo do seu PEI) <strong>NÃO</strong> são armazenados, monitorados ou utilizados para treinar os modelos de inteligência artificial.</p>
+        <p>As suas conversas com a IA permanecem privadas. O processamento ocorre em tempo real e o conteúdo não é guardado nos servidores da APIFreeLLM após a resposta ser gerada.</p>
 
         <SectionTitle>5. Transferência Internacional de Dados e Conformidade com a LGPD</SectionTitle>
         <p>A Lei Geral de Proteção de Dados (LGPD) e outras legislações de privacidade são levadas a sério por este projeto.</p>
         <ul className="list-disc list-inside space-y-2 my-3 pl-4">
-            <li><strong>Servidores Globais:</strong> O provedor da API, Google, opera com servidores em diversas localidades.</li>
+            <li><strong>Servidores Globais:</strong> Llama opera com servidores em diversas localidades.</li>
             <li><strong>Consentimento:</strong> Ao utilizar as funcionalidades de IA da aplicação, você reconhece e concorda que os dados contextuais do PEI serão enviados para processamento temporário e em tempo real nestes servidores. Dada a política de não armazenamento do provedor, garantimos o mais alto nível de privacidade possível nesta operação.</li>
             <li><strong>Seus Direitos (LGPD):</strong>
                 <ul className="list-disc list-inside space-y-1 mt-2 pl-6">
@@ -2573,7 +2573,7 @@ const PrivacyPolicyView = () => {
         <SectionTitle>6. Segurança dos Dados</SectionTitle>
         <ul className="list-disc list-inside space-y-1 my-3 pl-4">
             <li>Os dados armazenados localmente estão protegidos pela segurança do seu próprio navegador.</li>
-            <li>A comunicação entre a aplicação e a API do Google Gemini é feita através de uma conexão segura HTTPS.</li>
+            <li>A comunicação entre a aplicação e a APIFreeLLM é feita através de uma conexão segura HTTPS.</li>
         </ul>
 
         <SectionTitle>7. Privacidade de Crianças</SectionTitle>
