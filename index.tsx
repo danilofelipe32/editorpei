@@ -1253,6 +1253,39 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
         generateAndPrintPdf(currentPeiForPdf);
     };
 
+    const handleExportXml = () => {
+        const peiRecord = {
+            alunoNome: peiData['aluno-nome'] || 'PEI_Sem_Nome',
+            data: peiData,
+        };
+    
+        let xmlString = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xmlString += `<pei aluno-nome="${peiRecord.alunoNome.replace(/"/g, '&quot;')}">\n`;
+    
+        fieldOrderForPreview.forEach(section => {
+            xmlString += `  <secao titulo="${section.title.replace(/"/g, '&quot;')}">\n`;
+            section.fields.forEach(field => {
+                const value = peiRecord.data[field.id] || '';
+                xmlString += `    <campo id="${field.id}" label="${field.label.replace(/"/g, '&quot;')}">`;
+                xmlString += `<![CDATA[${value}]]>`;
+                xmlString += `</campo>\n`;
+            });
+            xmlString += `  </secao>\n`;
+        });
+    
+        xmlString += `</pei>`;
+    
+        const blob = new Blob([xmlString], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PEI_${peiRecord.alunoNome.replace(/\s+/g, '_')}.xml`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     const renderSmartAnalysis = (analysis: Record<string, {critique: string; suggestion: string}>) => {
         const criteriaMap = {
             isSpecific: "Específica (Specific)", isMeasurable: "Mensurável (Measurable)",
@@ -1552,6 +1585,14 @@ Certifique-se de que sua análise seja construtiva, profissional e baseada em ev
                 onClose={() => setIsPreviewModalOpen(false)}
                 footer={
                     <>
+                        <button
+                            type="button"
+                            onClick={handleExportXml}
+                            className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                        >
+                            <i className="fa-solid fa-file-code"></i>
+                            Exportar PEI XML
+                        </button>
                         <button
                             type="button"
                             onClick={handleDownloadPdf}
@@ -2284,6 +2325,7 @@ Refine a descrição atual com base na instrução e no contexto. Mantenha o pro
 const PeiListView = () => {
   const [peis, setPeis] = useState<PeiRecord[]>([]);
   const { navigateToEditPei, navigateToNewPei } = useAppStore();
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setPeis(getAllPeis());
@@ -2305,6 +2347,74 @@ const PeiListView = () => {
     }
   };
 
+  const handleImportClick = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const xmlString = e.target?.result as string;
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+
+            const parseError = xmlDoc.querySelector("parsererror");
+            if (parseError) {
+                console.error("Erro ao analisar XML:", parseError);
+                alert("O ficheiro XML fornecido é inválido ou está mal formatado.");
+                return;
+            }
+
+            const peiElement = xmlDoc.querySelector("pei");
+            if (!peiElement) {
+                alert("Ficheiro XML inválido: a tag raiz <pei> não foi encontrada.");
+                return;
+            }
+
+            const alunoNome = peiElement.getAttribute("aluno-nome") || 'PEI Importado';
+            const newData: PeiData = {};
+            const campos = xmlDoc.querySelectorAll("campo");
+            campos.forEach(campo => {
+                const id = campo.getAttribute("id");
+                const value = campo.textContent || ''; 
+                if (id) {
+                    newData[id] = value;
+                }
+            });
+            
+            if (Object.keys(newData).length === 0) {
+                alert("Nenhum dado de campo válido encontrado no ficheiro XML.");
+                return;
+            }
+
+            const newPeiRecord: NewPeiRecordData = {
+                data: newData,
+                aiGeneratedFields: [],
+                smartAnalysisResults: {},
+                goalActivities: {}
+            };
+
+            const savedRecord = savePei(newPeiRecord, null, alunoNome);
+            alert(`PEI para "${alunoNome}" importado com sucesso!`);
+            setPeis(getAllPeis());
+            navigateToEditPei(savedRecord.id);
+
+        } catch (error) {
+            console.error("Erro ao importar PEI:", error);
+            alert("Ocorreu um erro inesperado ao processar o ficheiro XML.");
+        } finally {
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    };
+    reader.readAsText(file);
+  };
+
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('pt-BR', {
         day: '2-digit',
@@ -2317,14 +2427,31 @@ const PeiListView = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">PEIs Salvos</h2>
-        <button 
-            type="button"
-            onClick={navigateToNewPei}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
-        >
-            <i className="fa-solid fa-plus"></i>
-            Criar Novo PEI
-        </button>
+        <div className="flex items-center gap-2">
+            <input
+                type="file"
+                ref={importInputRef}
+                onChange={handleFileImport}
+                accept=".xml,application/xml"
+                className="hidden"
+            />
+            <button
+                type="button"
+                onClick={handleImportClick}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+            >
+                <i className="fa-solid fa-file-import"></i>
+                Importar PEI XML
+            </button>
+            <button 
+                type="button"
+                onClick={navigateToNewPei}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+            >
+                <i className="fa-solid fa-plus"></i>
+                Criar Novo PEI
+            </button>
+        </div>
       </div>
 
       {peis.length === 0 ? (
